@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "finance-sim"
+version = "0.1.0"
+description = "contains functions that facilitate simulations of simple, potentially naive finance models related to personal investing"
+authors = ["Tyler Adams"]
+license = "Apache-2.0"
+readme = "README.md"
+packages = [{include = "finance_sim"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
