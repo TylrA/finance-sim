@@ -19,21 +19,19 @@ class FinanceHistory(object):
     def appendEvent(self, event: FinanceState):
         self.data.append(event)
 
-# todo: create a list of functions (events) that will be called (happen) once every time period according to the granularity.
-# an "event" will possibly append a state to the FinanceHistory object (more/less cash, etc.)
-FinanceEvent = Callable[[FinanceState, int, float], FinanceState]
+FinanceEvent = Callable[[FinanceHistory, int, float], FinanceState]
 financeEvents: list[FinanceEvent] = []
 
 def constantSalariedIncome(salary: float) -> FinanceEvent:
-    def incomeEvent(state: FinanceState, period: int, yearFraction: float):
-        result = state.copy()
+    def incomeEvent(history: FinanceHistory, period: int, yearFraction: float):
+        result = history.data[0].copy()
         result.cash += salary * yearFraction
         return result
     return incomeEvent
 
 def constantExpense(yearlyExpense: float) -> FinanceEvent:
-    def expenseEvent(state: FinanceState, period: int, yearFraction: float):
-        result = state.copy()
+    def expenseEvent(history: FinanceHistory, period: int, yearFraction: float):
+        result = history.data[0].copy()
         result.cash -= yearlyExpense * yearFraction
         return result
     return expenseEvent
@@ -59,7 +57,6 @@ if __name__ == '__main__':
     financeData = FinanceHistory(FinanceState(0))
 
     for eventIdx in range(int(granularity) * int(timePeriod)):
-        newState = financeData.data[-1]
         for funct in financeEvents:
-            newState = funct(financeData.data[-1], eventIdx, float(granularity))
+            newState = funct(financeData, eventIdx, float(granularity))
             financeData.appendEvent(newState)
