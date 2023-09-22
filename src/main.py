@@ -1,12 +1,32 @@
+from __future__ import annotations
+
 from typing import Callable
 import sys
 
+class ConstantGrowthAsset(object):
+    '''
+    "Constant" really means constant exponential rate
+    '''
+    value: float
+    appreciation: float
+    
+    def __init__(self, initialValue: float = 0, annualAppreciation: float = 0):
+        self.value = initialValue
+        self.appreciation = annualAppreciation
+
+    def appreciate(self, yearFraction: float) -> ConstantGrowthAsset:
+        value = self.value * (1 + self.appreciation) ** yearFraction
+        return ConstantGrowthAsset(value, self.appreciation)
+
 class FinanceState(object):
     def __init__(self, cash: float = 0):
-        self.cash = cash
+        self.cash: float = cash
+        self.constantGrowthAssets: list[ConstantGrowthAsset] = []
 
     def copy(self):
-        result = FinanceState(self.cash)
+        result = FinanceState()
+        result.cash = self.cash
+        result.constantGrowthAssets = self.constantGrowthAssets
         return result
 
 
@@ -35,6 +55,12 @@ def constantExpense(yearlyExpense: float) -> FinanceEvent:
         result.cash -= yearlyExpense * yearFraction
         return result
     return expenseEvent
+
+def appreciateConstantAssets(history: FinanceHistory, period: int, yearFraction: float) -> FinanceState:
+    result = history.data[0].copy()
+    result.constantGrowthAssets = [asset.appreciate(yearFraction) for asset in
+                                   result.constantGrowthAssets]
+    return result
 
 if __name__ == '__main__':
     if len(sys.argv) <= 2:
