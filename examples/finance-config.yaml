@@ -1,0 +1,25 @@
+time:
+  # how often do events occur? should follow the regex pattern \d+?(?:d|w|M|Y)
+  # d: days
+  # w: weeks
+  # M: months
+  # Y: years
+  granularity: 1M
+  # time period in years
+  period: 30
+
+initialValues:
+- type: cash
+  value: 100
+  name: Savings
+- type: constant-growth-asset
+  name: CD Savings
+  value: 500
+  appreciation: 0.05
+
+scheduledValues:
+- schedule:
+    date: 2030-05-14
+  type: cash
+  value: 5000
+  name: inheritance
