@@ -39,25 +39,25 @@ class FinanceHistory(object):
     def appendEvent(self, event: FinanceState):
         self.data.append(event)
 
-FinanceEvent = Callable[[FinanceHistory, int, float], FinanceState]
+FinanceEvent = Callable[[FinanceHistory, FinanceState, int, float], FinanceState]
 financeEvents: list[FinanceEvent] = []
 
 def constantSalariedIncome(salary: float) -> FinanceEvent:
-    def incomeEvent(history: FinanceHistory, period: int, yearFraction: float):
-        result = history.data[0].copy()
+    def incomeEvent(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float):
+        result = state.copy()
         result.cash += salary * yearFraction
         return result
     return incomeEvent
 
 def constantExpense(yearlyExpense: float) -> FinanceEvent:
-    def expenseEvent(history: FinanceHistory, period: int, yearFraction: float):
-        result = history.data[0].copy()
+    def expenseEvent(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float):
+        result = state.copy()
         result.cash -= yearlyExpense * yearFraction
         return result
     return expenseEvent
 
-def appreciateConstantAssets(history: FinanceHistory, period: int, yearFraction: float) -> FinanceState:
-    result = history.data[0].copy()
+def appreciateConstantAssets(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float) -> FinanceState:
+    result = state.copy()
     result.constantGrowthAssets = [asset.appreciate(yearFraction) for asset in
                                    result.constantGrowthAssets]
     return result
@@ -81,8 +81,22 @@ if __name__ == '__main__':
         exit(1)
 
     financeData = FinanceHistory(FinanceState(0))
+    initialData = FinanceState(100)
+    initialData.constantGrowthAssets.append(ConstantGrowthAsset(10000, 0.05))
+    financeEvents.append(constantSalariedIncome(50000))
+    financeEvents.append(constantExpense(20000))
+    financeEvents.append(appreciateConstantAssets)
+    financeData.data[0] = initialData
 
     for eventIdx in range(int(granularity) * int(timePeriod)):
+        newState = financeData.data[eventIdx]
         for funct in financeEvents:
-            newState = funct(financeData, eventIdx, float(granularity))
-            financeData.appendEvent(newState)
+            newState = funct(financeData, newState, eventIdx, 1 / float(granularity))
+        financeData.appendEvent(newState)
+
+    # temp report for testing
+    print("{}{}{}".format("INDEX".ljust(8), "CASH".ljust(15), "INVESTMENT"))
+    for idx in range(len(financeData.data)):
+        print("{}{}{}".format(str(idx).ljust(8),
+                              str(financeData.data[idx].cash).ljust(15),
+                              str(financeData.data[idx].constantGrowthAssets[0].value)))
