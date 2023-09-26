@@ -30,33 +30,40 @@ class FinanceState(object):
         return result
 
 
+FinanceEvent = Callable[[FinanceState, int, float], FinanceState]
+
+
 class FinanceHistory(object):
     def __init__(self, event: FinanceState):
-        self.data: list[FinanceState] = []
-        if not FinanceState is None:
-            self.data.append(event)
+        self.data: list[FinanceState] = [event]
+
+    def setEventComponents(self, events: list[FinanceEvent]):
+        self.events = events
+
+    def passEvent(self, idx: int, yearFraction: float):
+        newState = self.data[idx].copy()
+        for event in self.events:
+            newState = event(newState, idx, yearFraction)
+        self.data.append(newState)
     
     def appendEvent(self, event: FinanceState):
         self.data.append(event)
 
-FinanceEvent = Callable[[FinanceHistory, FinanceState, int, float], FinanceState]
-financeEvents: list[FinanceEvent] = []
-
 def constantSalariedIncome(salary: float) -> FinanceEvent:
-    def incomeEvent(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float):
+    def incomeEvent(state: FinanceState, period: int, yearFraction: float):
         result = state.copy()
         result.cash += salary * yearFraction
         return result
     return incomeEvent
 
 def constantExpense(yearlyExpense: float) -> FinanceEvent:
-    def expenseEvent(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float):
+    def expenseEvent(state: FinanceState, period: int, yearFraction: float):
         result = state.copy()
         result.cash -= yearlyExpense * yearFraction
         return result
     return expenseEvent
 
-def appreciateConstantAssets(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float) -> FinanceState:
+def appreciateConstantAssets(state: FinanceState, period: int, yearFraction: float) -> FinanceState:
     result = state.copy()
     result.constantGrowthAssets = [asset.appreciate(yearFraction) for asset in
                                    result.constantGrowthAssets]
@@ -80,19 +87,17 @@ if __name__ == '__main__':
         print("time-period must be numeric, got {}".format(timePeriod))
         exit(1)
 
-    financeData = FinanceHistory(FinanceState(0))
     initialData = FinanceState(100)
+    financeEvents: list[FinanceEvent] = []
     initialData.constantGrowthAssets.append(ConstantGrowthAsset(10000, 0.05))
     financeEvents.append(constantSalariedIncome(50000))
     financeEvents.append(constantExpense(20000))
     financeEvents.append(appreciateConstantAssets)
-    financeData.data[0] = initialData
+    financeData = FinanceHistory(initialData)
+    financeData.setEventComponents(financeEvents)
 
     for eventIdx in range(int(granularity) * int(timePeriod)):
-        newState = financeData.data[eventIdx]
-        for funct in financeEvents:
-            newState = funct(financeData, newState, eventIdx, 1 / float(granularity))
-        financeData.appendEvent(newState)
+        financeData.passEvent(eventIdx, 1 / float(granularity))
 
     # temp report for testing
     print("{}{}{}".format("INDEX".ljust(8), "CASH".ljust(15), "INVESTMENT"))
