@@ -41,7 +41,7 @@ class FinanceHistory(object):
         self.events = events
 
     def passEvent(self, idx: int, yearFraction: float):
-        newState = self.data[idx].copy()
+        newState = self.data[idx - 1].copy()
         for event in self.events:
             newState = event(newState, idx, yearFraction)
         self.data.append(newState)
