@@ -11,9 +11,11 @@ packages = [{ include = "finance_sim", from = "src" }]
 python = "^3.10"
 pytest = "^7.4.2"
 
-
 [tool.poetry.group.dev.dependencies]
 black = "^23.7.0"
+
+[tool.poetry.scripts]
+test = "scripts:runTests"
 
 
 
