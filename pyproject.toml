@@ -5,15 +5,17 @@ description = "contains functions that facilitate simulations of simple, potenti
 authors = ["Tyler Adams"]
 license = "Apache-2.0"
 readme = "README.md"
-packages = [{include = "finance_sim"}]
+packages = [{ include = "finance_sim", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-
+pytest = "^7.4.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.7.0"
 
+[tool.poetry.scripts]
+test = "scripts:runTests"
 
 
 
