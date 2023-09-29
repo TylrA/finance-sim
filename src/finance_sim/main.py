@@ -18,10 +18,20 @@ class ConstantGrowthAsset(object):
         value = self.value * (1 + self.appreciation) ** yearFraction
         return ConstantGrowthAsset(value, self.appreciation)
 
+class AmortizingLoan(object):
+    def __init__(self,
+                 initialPrinciple: float = 0,
+                 rate: float = 0.05,
+                 remainingTerm: int = 20):
+        self.principle = initialPrinciple
+        self.rate = rate
+        self.term = remainingTerm
+
 class FinanceState(object):
     def __init__(self, cash: float = 0):
         self.cash: float = cash
         self.constantGrowthAssets: list[ConstantGrowthAsset] = []
+        self.amortizingLoans: list[AmortizingLoan] = []
 
     def copy(self):
         result = FinanceState()
