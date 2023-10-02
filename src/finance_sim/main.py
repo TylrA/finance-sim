@@ -20,23 +20,45 @@ class ConstantGrowthAsset(object):
 
 class AmortizingLoan(object):
     def __init__(self,
+                 name: str,
                  initialPrinciple: float = 0,
+                 loanAmount: float = 0,
                  rate: float = 0.05,
-                 remainingTerm: int = 20):
+                 remainingTermInYears: float = 20
+                 ):
+        self.name = name
         self.principle = initialPrinciple
+        self.loanAmount = loanAmount
         self.rate = rate
-        self.term = remainingTerm
+        self.term = remainingTermInYears
+
+    def makePayment(self, state: FinanceState, index: int, yearFraction: float):
+        numerator = self.principle * (self.rate * yearFraction * (1 + self.rate) ** (self.term / yearFraction))
+        denominator = (1 + self.rate) ** (self.term / yearFraction) - 1
+        paymentAmount = numerator / denominator
+        newLoan = self.copy()
+        newLoan.principle += paymentAmount - (newLoan.loanAmount - newLoan.principle) * newLoan.rate * yearFraction
+        newLoan.term -= yearFraction
+        newState = state.copy()
+        newState.cash -= paymentAmount
+        newState.amortizingLoans[self.name] = newLoan
+
+    def copy(self):
+        result = AmortizingLoan(self.name, self.principle, self.loanAmount, self.rate, self.term)
+        return result
+        
 
 class FinanceState(object):
     def __init__(self, cash: float = 0):
         self.cash: float = cash
         self.constantGrowthAssets: list[ConstantGrowthAsset] = []
-        self.amortizingLoans: list[AmortizingLoan] = []
+        self.amortizingLoans: dict[str, AmortizingLoan] = {}
 
     def copy(self):
         result = FinanceState()
         result.cash = self.cash
         result.constantGrowthAssets = self.constantGrowthAssets
+        result.amortizingLoans = self.amortizingLoans
         return result
 
 
