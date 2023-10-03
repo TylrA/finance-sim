@@ -32,7 +32,7 @@ class AmortizingLoan(object):
         self.rate = rate
         self.term = remainingTermInYears
 
-    def makePayment(self, state: FinanceState, index: int, yearFraction: float):
+    def makePayment(self, state: FinanceState, index: int, yearFraction: float) -> FinanceState:
         numerator = self.principle * (self.rate * yearFraction * (1 + self.rate) ** (self.term / yearFraction))
         denominator = (1 + self.rate) ** (self.term / yearFraction) - 1
         paymentAmount = numerator / denominator
@@ -42,6 +42,7 @@ class AmortizingLoan(object):
         newState = state.copy()
         newState.cash -= paymentAmount
         newState.amortizingLoans[self.name] = newLoan
+        return newState
 
     def copy(self):
         result = AmortizingLoan(self.name, self.principle, self.loanAmount, self.rate, self.term)
