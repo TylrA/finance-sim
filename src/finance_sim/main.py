@@ -94,10 +94,10 @@ def makeAmortizedPayments(state: FinanceState, period: int, yearFraction: float)
     result = state.copy()
     for name, amortizingLoan in result.amortizingLoans.items():
         newLoan = amortizingLoan.copy()
-        numerator = newLoan.rate * yearFraction * \
-            (1 + newLoan.rate) ** (newLoan.term / yearFraction)
-        denominator = (1 + newLoan.rate) ** (newLoan.term / yearFraction) - 1
-        paymentAmount = newLoan.principle * numerator / denominator
+        i = (1 + newLoan.rate) ** yearFraction - 1
+        numerator = (newLoan.loanAmount - newLoan.principle) * i
+        denominator = 1 - (1 + i) ** -(newLoan.term / yearFraction)
+        paymentAmount = numerator / denominator
         newLoan.principle += paymentAmount - (newLoan.loanAmount - newLoan.principle) * \
             newLoan.rate * yearFraction
         newLoan.term -= yearFraction

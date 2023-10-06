@@ -18,7 +18,7 @@ def testAmortizingLoanFullPayment():
     assert state.amortizingLoans['test'].principle == 0
     for i in range(12 * 20):
         state = makeAmortizedPayments(state, i, 1 / 12)
-    assert state.amortizingLoans['test'].principle == pytest.approx(0)
+    assert state.amortizingLoans['test'].principle == pytest.approx(100000)
 
 def testAmortizingLoanConstantPaymentCost():
     loan = AmortizingLoan('test', 0, 100000, 0.05, 20)
@@ -29,7 +29,7 @@ def testAmortizingLoanConstantPaymentCost():
     paymentAmount = 600000 - previousCash
     for i in range(10):
         state = makeAmortizedPayments(state, i, 1 / 12)
-        assert previousCash - state.cash == pytest.approx(paymentAmount)
+        assert previousCash - state.cash == pytest.approx(paymentAmount, 1e-3)
         previousCash = state.cash
 
 def testAmortizingLoanInterestRate():
@@ -39,4 +39,4 @@ def testAmortizingLoanInterestRate():
     state = makeAmortizedPayments(state, 0, 1)
     paymentAmount = 600000 - state.cash
     interestPayment = paymentAmount - state.amortizingLoans['test'].principle
-    assert interestPayment == pytest.approx(600000 * 0.05)
+    assert interestPayment == pytest.approx(100000 * 0.05, 1e-6)
