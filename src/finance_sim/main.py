@@ -18,15 +18,36 @@ class ConstantGrowthAsset(object):
         value = self.value * (1 + self.appreciation) ** yearFraction
         return ConstantGrowthAsset(value, self.appreciation)
 
+class AmortizingLoan(object):
+    def __init__(self,
+                 name: str,
+                 initialPrinciple: float = 0,
+                 loanAmount: float = 0,
+                 rate: float = 0.05,
+                 remainingTermInYears: float = 20
+                 ):
+        self.name = name
+        self.principle = initialPrinciple
+        self.loanAmount = loanAmount
+        self.rate = rate
+        self.term = remainingTermInYears
+
+    def copy(self):
+        result = AmortizingLoan(self.name, self.principle, self.loanAmount, self.rate, self.term)
+        return result
+        
+
 class FinanceState(object):
     def __init__(self, cash: float = 0):
         self.cash: float = cash
         self.constantGrowthAssets: list[ConstantGrowthAsset] = []
+        self.amortizingLoans: dict[str, AmortizingLoan] = {}
 
     def copy(self):
         result = FinanceState()
         result.cash = self.cash
         result.constantGrowthAssets = self.constantGrowthAssets
+        result.amortizingLoans = self.amortizingLoans
         return result
 
 
@@ -67,6 +88,21 @@ def appreciateConstantAssets(state: FinanceState, period: int, yearFraction: flo
     result = state.copy()
     result.constantGrowthAssets = [asset.appreciate(yearFraction) for asset in
                                    result.constantGrowthAssets]
+    return result
+
+def makeAmortizedPayments(state: FinanceState, period: int, yearFraction: float) -> FinanceState:
+    result = state.copy()
+    for name, amortizingLoan in result.amortizingLoans.items():
+        newLoan = amortizingLoan.copy()
+        i = (1 + newLoan.rate) ** yearFraction - 1
+        numerator = (newLoan.loanAmount - newLoan.principle) * i
+        denominator = 1 - (1 + i) ** -(newLoan.term / yearFraction)
+        paymentAmount = numerator / denominator
+        newLoan.principle += paymentAmount - (newLoan.loanAmount - newLoan.principle) * \
+            newLoan.rate * yearFraction
+        newLoan.term -= yearFraction
+        result.cash -= paymentAmount
+        result.amortizingLoans[name] = newLoan
     return result
 
 if __name__ == '__main__':
