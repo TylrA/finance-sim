@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Callable
+from dataclasses import dataclass
 import sys
 
 class ConstantGrowthAsset(object):
@@ -43,6 +44,7 @@ class FinanceState(object):
         self.constantGrowthAssets: list[ConstantGrowthAsset] = []
         self.amortizingLoans: dict[str, AmortizingLoan] = {}
         self.taxableIncome: float = 0
+        self.taxesPaid: float = 0
 
     def copy(self):
         result = FinanceState()
@@ -107,10 +109,29 @@ def makeAmortizedPayments(state: FinanceState, period: int, yearFraction: float)
         result.amortizingLoans[name] = newLoan
     return result
 
-def taxPaymentSchedule(frequency: float, brackets: list[list[float]]):
-    def payTaxes(state: FinanceState, period: int, yearFraction: float):
+@dataclass
+class TaxBracket(object):
+    rate: float
+    income: float
+
+def taxPaymentSchedule(frequency: float, brackets: list[TaxBracket]) -> FinanceEvent:
+    if brackets[0].income != 0.0:
+        raise RuntimeError('brackets must start with a zero income bracket')
+
+    def payTaxes(state: FinanceState, period: int, yearFraction: float) -> FinanceState:
+        result = state.copy()
         if ((period * yearFraction) % frequency) < yearFraction:
-            pass # todo: drain taxableIncome according to `brackets`
+            taxDue = 0
+            for bracket in brackets[::-1]:
+                if result.taxableIncome > bracket.income:
+                    marginAboveBracket = result.taxableIncome - bracket.income
+                    taxDue += bracket.rate * marginAboveBracket
+                    result.taxableIncome -= marginAboveBracket
+            result.cash -= taxDue
+            result.taxesPaid += taxDue
+        return result
+
+    return payTaxes
 
 if __name__ == '__main__':
     if len(sys.argv) <= 2:
