@@ -42,12 +42,14 @@ class FinanceState(object):
         self.cash: float = cash
         self.constantGrowthAssets: list[ConstantGrowthAsset] = []
         self.amortizingLoans: dict[str, AmortizingLoan] = {}
+        self.taxableIncome: float = 0
 
     def copy(self):
         result = FinanceState()
         result.cash = self.cash
         result.constantGrowthAssets = self.constantGrowthAssets
         result.amortizingLoans = self.amortizingLoans
+        result.taxableIncome = self.taxableIncome
         return result
 
 
@@ -104,6 +106,11 @@ def makeAmortizedPayments(state: FinanceState, period: int, yearFraction: float)
         result.cash -= paymentAmount
         result.amortizingLoans[name] = newLoan
     return result
+
+def taxPaymentSchedule(frequency: float, brackets: list[list[float]]):
+    def payTaxes(state: FinanceState, period: int, yearFraction: float):
+        if ((period * yearFraction) % frequency) < yearFraction:
+            pass # todo: drain taxableIncome according to `brackets`
 
 if __name__ == '__main__':
     if len(sys.argv) <= 2:
