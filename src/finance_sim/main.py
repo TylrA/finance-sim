@@ -78,26 +78,39 @@ FinanceEvent = Callable[[FinanceHistory, FinanceState, int, float], FinanceState
 
 
 def constantSalariedIncome(salary: float) -> FinanceEvent:
-    def incomeEvent(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float):
+    def incomeEvent(history: FinanceHistory,
+                    state: FinanceState,
+                    period: int,
+                    yearFraction: float) -> FinanceState:
         result = state.copy()
         result.cash += salary * yearFraction
+        result.taxableIncome += salary * yearFraction
         return result
     return incomeEvent
 
 def constantExpense(yearlyExpense: float) -> FinanceEvent:
-    def expenseEvent(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float):
+    def expenseEvent(history: FinanceHistory,
+                     state: FinanceState,
+                     period: int,
+                     yearFraction: float) -> FinanceState:
         result = state.copy()
         result.cash -= yearlyExpense * yearFraction
         return result
     return expenseEvent
 
-def appreciateConstantAssets(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float) -> FinanceState:
+def appreciateConstantAssets(history: FinanceHistory,
+                             state: FinanceState,
+                             period: int,
+                             yearFraction: float) -> FinanceState:
     result = state.copy()
     result.constantGrowthAssets = [asset.appreciate(yearFraction) for asset in
                                    result.constantGrowthAssets]
     return result
 
-def makeAmortizedPayments(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float) -> FinanceState:
+def makeAmortizedPayments(history: FinanceHistory,
+                          state: FinanceState,
+                          period: int,
+                          yearFraction: float) -> FinanceState:
     result = state.copy()
     for name, amortizingLoan in result.amortizingLoans.items():
         newLoan = amortizingLoan.copy()
