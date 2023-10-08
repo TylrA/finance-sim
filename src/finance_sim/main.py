@@ -54,10 +54,6 @@ class FinanceState(object):
         result.taxableIncome = self.taxableIncome
         return result
 
-
-FinanceEvent = Callable[[FinanceState, int, float], FinanceState]
-
-
 class FinanceHistory(object):
     def __init__(self, event: FinanceState):
         self.data: list[FinanceState] = [event]
@@ -68,33 +64,40 @@ class FinanceHistory(object):
     def passEvent(self, idx: int, yearFraction: float):
         newState = self.data[idx - 1].copy()
         for event in self.events:
-            newState = event(newState, idx, yearFraction)
+            newState = event(self, newState, idx, yearFraction)
         self.data.append(newState)
     
     def appendEvent(self, event: FinanceState):
         self.data.append(event)
 
+    def latestEvent(self):
+        return self.data[-1]
+
+
+FinanceEvent = Callable[[FinanceHistory, FinanceState, int, float], FinanceState]
+
+
 def constantSalariedIncome(salary: float) -> FinanceEvent:
-    def incomeEvent(state: FinanceState, period: int, yearFraction: float):
+    def incomeEvent(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float):
         result = state.copy()
         result.cash += salary * yearFraction
         return result
     return incomeEvent
 
 def constantExpense(yearlyExpense: float) -> FinanceEvent:
-    def expenseEvent(state: FinanceState, period: int, yearFraction: float):
+    def expenseEvent(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float):
         result = state.copy()
         result.cash -= yearlyExpense * yearFraction
         return result
     return expenseEvent
 
-def appreciateConstantAssets(state: FinanceState, period: int, yearFraction: float) -> FinanceState:
+def appreciateConstantAssets(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float) -> FinanceState:
     result = state.copy()
     result.constantGrowthAssets = [asset.appreciate(yearFraction) for asset in
                                    result.constantGrowthAssets]
     return result
 
-def makeAmortizedPayments(state: FinanceState, period: int, yearFraction: float) -> FinanceState:
+def makeAmortizedPayments(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float) -> FinanceState:
     result = state.copy()
     for name, amortizingLoan in result.amortizingLoans.items():
         newLoan = amortizingLoan.copy()
@@ -118,13 +121,14 @@ def taxPaymentSchedule(frequency: float, brackets: list[TaxBracket]) -> FinanceE
     if brackets[0].income != 0.0:
         raise RuntimeError('brackets must start with a zero income bracket')
 
-    def payTaxes(state: FinanceState, period: int, yearFraction: float) -> FinanceState:
+    def payTaxes(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float) -> FinanceState:
         result = state.copy()
         if ((period * yearFraction) % frequency) < yearFraction:
             taxDue = 0
             for bracket in brackets[::-1]:
-                if result.taxableIncome > bracket.income:
-                    marginAboveBracket = result.taxableIncome - bracket.income
+                adjustedIncome = bracket.income * yearFraction
+                if result.taxableIncome > adjustedIncome:
+                    marginAboveBracket = result.taxableIncome - adjustedIncome
                     taxDue += bracket.rate * marginAboveBracket
                     result.taxableIncome -= marginAboveBracket
             result.cash -= taxDue
