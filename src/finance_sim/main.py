@@ -52,6 +52,7 @@ class FinanceState(object):
         result.constantGrowthAssets = self.constantGrowthAssets
         result.amortizingLoans = self.amortizingLoans
         result.taxableIncome = self.taxableIncome
+        result.taxesPaid = self.taxesPaid
         return result
 
 class FinanceHistory(object):
