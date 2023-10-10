@@ -142,9 +142,9 @@ def taxPaymentSchedule(frequency: float, brackets: list[TaxBracket]) -> FinanceE
         if ((period * yearFraction) % frequency) < yearFraction:
             taxDue = 0
             for bracket in brackets[::-1]:
-                adjustedIncome = bracket.income * yearFraction
-                if result.taxableIncome > adjustedIncome:
-                    marginAboveBracket = result.taxableIncome - adjustedIncome
+                adjustedIncomeThreshold = bracket.income * yearFraction
+                if result.taxableIncome > adjustedIncomeThreshold:
+                    marginAboveBracket = result.taxableIncome - adjustedIncomeThreshold
                     taxDue += bracket.rate * marginAboveBracket
                     result.taxableIncome -= marginAboveBracket
             result.cash -= taxDue
