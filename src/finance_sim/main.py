@@ -132,6 +132,8 @@ class TaxBracket(object):
     income: float
 
 def taxPaymentSchedule(frequency: float, brackets: list[TaxBracket]) -> FinanceEvent:
+    if len(brackets) < 1:
+        raise RuntimeError('there must be at least one tax bracket')
     if brackets[0].income != 0.0:
         raise RuntimeError('brackets must start with a zero income bracket')
 
