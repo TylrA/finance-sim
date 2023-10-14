@@ -1,13 +1,14 @@
 import yaml
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 
 @dataclass
 class TimeConfig(object):
     granularity: str
     period: int
 
-class StateType:
+class StateType(Enum):
     cash = 1
     constantGrowthAsset = 2
 
@@ -28,6 +29,6 @@ class ScenarioConfig(object):
     initialValues: list[StateConfig]
     scheduledValues: list[ScheduledState]
 
-def parseConfig(path: str):
+def parseConfig(path: str) -> ScenarioConfig:
     with open(path, 'r') as configFile:
         return yaml.parse(configFile)
