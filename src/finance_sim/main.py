@@ -4,6 +4,7 @@ from typing import Callable
 from dataclasses import dataclass
 from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
+from calendar import isleap
 import sys
 
 class ConstantGrowthAsset(object):
@@ -82,6 +83,11 @@ class FinanceHistory(object):
 
 FinanceEvent = Callable[[FinanceHistory, FinanceState, date, relativedelta], FinanceState]
 
+def portionOfYear(date: date, period: relativedelta) -> float:
+    periodStart = date - period
+    days =date.toordinal() - periodStart.toordinal()
+    daysInYear = 366 if isleap(date.year) else 365
+    return days / daysInYear
 
 def constantSalariedIncome(salary: float) -> FinanceEvent:
     def incomeEvent(history: FinanceHistory,
@@ -89,18 +95,19 @@ def constantSalariedIncome(salary: float) -> FinanceEvent:
                     date: date,
                     period: relativedelta) -> FinanceState:
         result = state.copy()
-        result.cash += salary * yearFraction
-        result.taxableIncome += salary * yearFraction
+        portion = portionOfYear(date, period)
+        result.cash += salary * portion
+        result.taxableIncome += salary * portion
         return result
     return incomeEvent
 
 def constantExpense(yearlyExpense: float) -> FinanceEvent:
     def expenseEvent(history: FinanceHistory,
                      state: FinanceState,
-                     period: int,
-                     yearFraction: float) -> FinanceState:
+                     date: date,
+                     period: relativedelta) -> FinanceState:
         result = state.copy()
-        result.cash -= yearlyExpense * yearFraction
+        result.cash -= yearlyExpense * portionOfYear(date, period)
         return result
     return expenseEvent
 
