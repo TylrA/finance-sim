@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, timedelta
+from dateutil.relativedelta import relativedelta
 import sys
 
 class ConstantGrowthAsset(object):
@@ -40,7 +41,7 @@ class AmortizingLoan(object):
         
 
 class FinanceState(object):
-    def __init__(self, date: datetime):
+    def __init__(self, date: date = date.today()):
         self.date = date
         self.cash: float = 0
         self.constantGrowthAssets: list[ConstantGrowthAsset] = []
@@ -65,7 +66,7 @@ class FinanceHistory(object):
     def setEventComponents(self, events: list[FinanceEvent]):
         self.events = events
 
-    def passEvent(self, date: datetime, period: timedelta):
+    def passEvent(self, date: date, period: relativedelta):
         newState = self.data[idx - 1].copy()
         newState.date = date
         for event in self.events:
@@ -79,14 +80,14 @@ class FinanceHistory(object):
         return self.data[-1]
 
 
-FinanceEvent = Callable[[FinanceHistory, FinanceState, datetime, timedelta], FinanceState]
+FinanceEvent = Callable[[FinanceHistory, FinanceState, date, relativedelta], FinanceState]
 
 
 def constantSalariedIncome(salary: float) -> FinanceEvent:
     def incomeEvent(history: FinanceHistory,
                     state: FinanceState,
-                    period: int,
-                    yearFraction: float) -> FinanceState:
+                    date: date,
+                    period: relativedelta) -> FinanceState:
         result = state.copy()
         result.cash += salary * yearFraction
         result.taxableIncome += salary * yearFraction
