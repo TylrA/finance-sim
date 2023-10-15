@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Callable
 from dataclasses import dataclass
+from datetime import datetime
 import sys
 
 class ConstantGrowthAsset(object):
@@ -39,8 +40,9 @@ class AmortizingLoan(object):
         
 
 class FinanceState(object):
-    def __init__(self, cash: float = 0):
-        self.cash: float = cash
+    def __init__(self, date: datetime):
+        self.date = date
+        self.cash: float = 0
         self.constantGrowthAssets: list[ConstantGrowthAsset] = []
         self.amortizingLoans: dict[str, AmortizingLoan] = {}
         self.taxableIncome: float = 0
@@ -48,6 +50,7 @@ class FinanceState(object):
 
     def copy(self):
         result = FinanceState()
+        result.date = self.date
         result.cash = self.cash
         result.constantGrowthAssets = self.constantGrowthAssets
         result.amortizingLoans = self.amortizingLoans
