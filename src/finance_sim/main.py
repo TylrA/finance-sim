@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Callable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 import sys
 
 class ConstantGrowthAsset(object):
@@ -65,10 +65,11 @@ class FinanceHistory(object):
     def setEventComponents(self, events: list[FinanceEvent]):
         self.events = events
 
-    def passEvent(self, idx: int, yearFraction: float):
+    def passEvent(self, date: datetime, period: timedelta):
         newState = self.data[idx - 1].copy()
+        newState.date = date
         for event in self.events:
-            newState = event(self, newState, idx, yearFraction)
+            newState = event(self, newState, date, period)
         self.data.append(newState)
     
     def appendEvent(self, event: FinanceState):
@@ -78,7 +79,7 @@ class FinanceHistory(object):
         return self.data[-1]
 
 
-FinanceEvent = Callable[[FinanceHistory, FinanceState, int, float], FinanceState]
+FinanceEvent = Callable[[FinanceHistory, FinanceState, datetime, timedelta], FinanceState]
 
 
 def constantSalariedIncome(salary: float) -> FinanceEvent:
