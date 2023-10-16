@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Callable
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date
 from dateutil.relativedelta import relativedelta
 from calendar import isleap
 import sys
@@ -49,6 +49,7 @@ class FinanceState(object):
         self.amortizingLoans: dict[str, AmortizingLoan] = {}
         self.taxableIncome: float = 0
         self.taxesPaid: float = 0
+        self.lastDateTaxesPaid: date = date
 
     def copy(self):
         result = FinanceState()
@@ -58,6 +59,7 @@ class FinanceState(object):
         result.amortizingLoans = self.amortizingLoans
         result.taxableIncome = self.taxableIncome
         result.taxesPaid = self.taxesPaid
+        result.lastDateTaxesPaid = self.lastDateTaxesPaid
         return result
 
 class FinanceHistory(object):
@@ -113,18 +115,19 @@ def constantExpense(yearlyExpense: float) -> FinanceEvent:
 
 def appreciateConstantAssets(history: FinanceHistory,
                              state: FinanceState,
-                             period: int,
-                             yearFraction: float) -> FinanceState:
+                             date: date,
+                             period: relativedelta) -> FinanceState:
     result = state.copy()
-    result.constantGrowthAssets = [asset.appreciate(yearFraction) for asset in
-                                   result.constantGrowthAssets]
+    result.constantGrowthAssets = [asset.appreciate(portionOfYear(date, period)) for asset
+                                   in result.constantGrowthAssets]
     return result
 
 def makeAmortizedPayments(history: FinanceHistory,
                           state: FinanceState,
-                          period: int,
-                          yearFraction: float) -> FinanceState:
+                          date: date,
+                          period: relativedelta) -> FinanceState:
     result = state.copy()
+    yearFraction = portionOfYear(date, period)
     for name, amortizingLoan in result.amortizingLoans.items():
         newLoan = amortizingLoan.copy()
         i = (1 + newLoan.rate) ** yearFraction - 1
@@ -143,24 +146,31 @@ class TaxBracket(object):
     rate: float
     income: float
 
-def taxPaymentSchedule(frequency: float, brackets: list[TaxBracket]) -> FinanceEvent:
+def taxPaymentSchedule(frequency: relativedelta,
+                       brackets: list[TaxBracket]) -> FinanceEvent:
     if len(brackets) < 1:
         raise RuntimeError('there must be at least one tax bracket')
     if brackets[0].income != 0.0:
         raise RuntimeError('brackets must start with a zero income bracket')
 
-    def payTaxes(history: FinanceHistory, state: FinanceState, period: int, yearFraction: float) -> FinanceState:
+    def payTaxes(history: FinanceHistory,
+                 state: FinanceState,
+                 date: date,
+                 period: relativedelta) -> FinanceState:
         result = state.copy()
-        if ((period * yearFraction) % frequency) < yearFraction:
+        taxPeriod = relativedelta(seconds=int((date - result.lastDateTaxesPaid)
+                                              .total_seconds()))
+        if (date - taxPeriod) <= (date - frequency):
             taxDue = 0
             for bracket in brackets[::-1]:
-                adjustedIncomeThreshold = bracket.income * yearFraction
+                adjustedIncomeThreshold = bracket.income * portionOfYear(date, taxPeriod)
                 if result.taxableIncome > adjustedIncomeThreshold:
                     marginAboveBracket = result.taxableIncome - adjustedIncomeThreshold
                     taxDue += bracket.rate * marginAboveBracket
                     result.taxableIncome -= marginAboveBracket
             result.cash -= taxDue
             result.taxesPaid += taxDue
+            result.lastDateTaxesPaid = date
         return result
 
     return payTaxes
