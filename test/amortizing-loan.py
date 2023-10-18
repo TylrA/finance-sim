@@ -4,7 +4,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 def testAmortizingLoanTerm():
-    loan = AmortizingLoan('test', 0, 100000, 0.05, 20)
+    loan = AmortizingLoan('test', AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
     state = FinanceState(date(1999, 12, 1))
     state.cash = 100000
     history = FinanceHistory(state)
@@ -17,7 +17,7 @@ def testAmortizingLoanTerm():
     assert state.amortizingLoans['test'].term == pytest.approx(19)
 
 def testAmortizingLoanFullPayment():
-    loan = AmortizingLoan('test', 0, 100000, 0.05, 20)
+    loan = AmortizingLoan('test', AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
     state = FinanceState(date(1999, 12, 1))
     state.cash = 600000
     history = FinanceHistory(state)
@@ -30,7 +30,7 @@ def testAmortizingLoanFullPayment():
     assert state.amortizingLoans['test'].principle == pytest.approx(100000)
 
 def testAmortizingLoanConstantPaymentCost():
-    loan = AmortizingLoan('test', 0, 100000, 0.05, 20)
+    loan = AmortizingLoan('test', AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
     state = FinanceState(date(1999, 12, 1))
     state.cash = 600000
     history = FinanceHistory(state)
@@ -45,7 +45,7 @@ def testAmortizingLoanConstantPaymentCost():
         previousCash = state.cash
 
 def testAmortizingLoanInterestRate():
-    loan = AmortizingLoan('test', 0, 100000, 0.05, 20)
+    loan = AmortizingLoan('test', AccrualModel.ProRata, 0, 100000, 0.05, 20)
     state = FinanceState(date(2000, 1, 1))
     state.cash = 600000
     history = FinanceHistory(state)
