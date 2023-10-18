@@ -5,7 +5,22 @@ from dataclasses import dataclass
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from calendar import isleap
+from enum import Enum
 import sys
+
+class AccrualModel(Enum):
+    ProRata = 0
+    PeriodicMonthly = 1
+
+def portionOfYear(date: date, period: relativedelta, accrualModel: AccrualModel) -> float:
+    if accrualModel == AccrualModel.PeriodicMonthly:
+        if period != relativedelta(months=1):
+            raise RuntimeError("Periodic monthly accrual model only supports periods of exactly one month")
+        return 1 / 12
+    periodStart = date - period
+    days = date.toordinal() - periodStart.toordinal()
+    daysInYear = 366 if isleap(date.year) else 365
+    return days / daysInYear
 
 class ConstantGrowthAsset(object):
     '''
@@ -14,30 +29,38 @@ class ConstantGrowthAsset(object):
     value: float
     appreciation: float
     
-    def __init__(self, initialValue: float = 0, annualAppreciation: float = 0):
+    def __init__(self, accrualModel: AccrualModel, initialValue: float = 0, annualAppreciation: float = 0):
         self.value = initialValue
         self.appreciation = annualAppreciation
+        self.accrualModel = accrualModel
 
-    def appreciate(self, yearFraction: float) -> ConstantGrowthAsset:
-        value = self.value * (1 + self.appreciation) ** yearFraction
+    def appreciate(self, date: date, period: relativedelta) -> ConstantGrowthAsset:
+        portion = portionOfYear(date, period, self.accrualModel)
+        value = self.value * (1 + self.appreciation) ** portion
         return ConstantGrowthAsset(value, self.appreciation)
 
 class AmortizingLoan(object):
     def __init__(self,
                  name: str,
+                 accrualModel: AccrualModel,
                  initialPrinciple: float = 0,
                  loanAmount: float = 0,
                  rate: float = 0.05,
-                 remainingTermInYears: float = 20
-                 ):
+                 remainingTermInYears: float = 20):
         self.name = name
+        self.accrualModel = accrualModel
         self.principle = initialPrinciple
         self.loanAmount = loanAmount
         self.rate = rate
         self.term = remainingTermInYears
 
     def copy(self):
-        result = AmortizingLoan(self.name, self.principle, self.loanAmount, self.rate, self.term)
+        result = AmortizingLoan(self.name,
+                                self.accrualModel,
+                                self.principle,
+                                self.loanAmount,
+                                self.rate,
+                                self.term)
         return result
         
 
@@ -82,34 +105,27 @@ class FinanceHistory(object):
     def latestEvent(self):
         return self.data[-1]
 
-
 FinanceEvent = Callable[[FinanceHistory, FinanceState, date, relativedelta], FinanceState]
 
-def portionOfYear(date: date, period: relativedelta) -> float:
-    periodStart = date - period
-    days =date.toordinal() - periodStart.toordinal()
-    daysInYear = 366 if isleap(date.year) else 365
-    return days / daysInYear
-
-def constantSalariedIncome(salary: float) -> FinanceEvent:
+def constantSalariedIncome(salary: float, accrualModel: AccrualModel) -> FinanceEvent:
     def incomeEvent(history: FinanceHistory,
                     state: FinanceState,
                     date: date,
                     period: relativedelta) -> FinanceState:
         result = state.copy()
-        portion = portionOfYear(date, period)
+        portion = portionOfYear(date, period, accrualModel)
         result.cash += salary * portion
         result.taxableIncome += salary * portion
         return result
     return incomeEvent
 
-def constantExpense(yearlyExpense: float) -> FinanceEvent:
+def constantExpense(yearlyExpense: float, accrualModel: AccrualModel) -> FinanceEvent:
     def expenseEvent(history: FinanceHistory,
                      state: FinanceState,
                      date: date,
                      period: relativedelta) -> FinanceState:
         result = state.copy()
-        result.cash -= yearlyExpense * portionOfYear(date, period)
+        result.cash -= yearlyExpense * portionOfYear(date, period, accrualModel)
         return result
     return expenseEvent
 
@@ -118,7 +134,7 @@ def appreciateConstantAssets(history: FinanceHistory,
                              date: date,
                              period: relativedelta) -> FinanceState:
     result = state.copy()
-    result.constantGrowthAssets = [asset.appreciate(portionOfYear(date, period)) for asset
+    result.constantGrowthAssets = [asset.appreciate(date, period) for asset
                                    in result.constantGrowthAssets]
     return result
 
@@ -127,9 +143,9 @@ def makeAmortizedPayments(history: FinanceHistory,
                           date: date,
                           period: relativedelta) -> FinanceState:
     result = state.copy()
-    yearFraction = portionOfYear(date, period)
     for name, amortizingLoan in result.amortizingLoans.items():
         newLoan = amortizingLoan.copy()
+        yearFraction = portionOfYear(date, period, amortizingLoan.accrualModel)
         i = (1 + newLoan.rate) ** yearFraction - 1
         numerator = (newLoan.loanAmount - newLoan.principle) * i
         denominator = 1 - (1 + i) ** -(newLoan.term / yearFraction)
