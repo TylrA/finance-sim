@@ -93,7 +93,7 @@ class FinanceHistory(object):
         self.events = events
 
     def passEvent(self, date: date, period: relativedelta):
-        newState = self.data[idx - 1].copy()
+        newState = self.data[-1].copy()
         newState.date = date
         for event in self.events:
             newState = event(self, newState, date, period)
