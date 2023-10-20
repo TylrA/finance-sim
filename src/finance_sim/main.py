@@ -12,11 +12,27 @@ class AccrualModel(Enum):
     ProRata = 0
     PeriodicMonthly = 1
 
+def nonZeroValuesInDelta(delta: relativedelta) -> list[str]:
+    result: list[str] = []
+    if delta.years != 0: result.append('years')
+    if delta.months != 0: result.append('months')
+    if delta.days != 0: result.append('days')
+    if delta.leapdays != 0: result.append('leapdays')
+    if delta.hours != 0: result.append('hours')
+    if delta.minutes != 0: result.append('minutes')
+    if delta.seconds != 0: result.append('seconds')
+    if delta.microseconds != 0: result.append('microseconds')
+    return result
+
 def portionOfYear(date: date, period: relativedelta, accrualModel: AccrualModel) -> float:
     if accrualModel == AccrualModel.PeriodicMonthly:
-        if period != relativedelta(months=1):
-            raise RuntimeError("Periodic monthly accrual model only supports periods of exactly one month")
-        return 1 / 12
+        fieldsInPeriod = nonZeroValuesInDelta(period)
+        if fieldsInPeriod == ['months'] or fieldsInPeriod == ['years', 'months']:
+            return period.years + period.months / 12
+        raise RuntimeError("Periodic monthly accrual model only supports periods of " +
+                           "containing non-month values")
+
+    # pro rata
     periodStart = date - period
     days = date.toordinal() - periodStart.toordinal()
     daysInYear = 366 if isleap(date.year) else 365
