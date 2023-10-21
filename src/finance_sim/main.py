@@ -8,12 +8,14 @@ from dateutil.relativedelta import relativedelta
 from calendar import isleap
 from enum import Enum
 import sys
+import calendar
 
 class AccrualModel(Enum):
     ProRata = 0
     PeriodicMonthly = 1
     PeriodicWeekly = 2
     PeriodicBiweekly = 3
+    PeriodicSemiMonthly = 4
 
 def nonZeroValuesInDelta(delta: relativedelta) -> list[str]:
     result: list[str] = []
@@ -50,6 +52,31 @@ def portionOfYear(date: date, period: relativedelta, accrualModel: AccrualModel)
             raise ArgumentError("Periodic weekly accrual model only works for periods " +
                                 "that are multiples of 14 days")
         return (period.days // 14) / 26
+    elif accrualModel == AccrualModel.PeriodicSemiMonthly:
+        daysInMonth = calendar.monthrange(date.year, date.month)[1]
+        if (
+            fieldsInPeriod != ['days'] and fieldsInPeriod != ['months', 'days'] and \
+            fieldsInPeriod != ['years', 'months', 'days']
+        ):
+            raise ArgumentError("Periodic semi-monthly accrual model does not support " +
+                                "periods containing non-day, non-month, non-year values")
+        if date.day != 15 and date.day != daysInMonth:
+            raise ArgumentError("Periodic semi-monthly accrual model does not support " +
+                                "dates not on the 15th or final day of the month")
+        dateBeginningPeriod = date - period
+        daysInMonthBeginning = calendar.monthrange(dateBeginningPeriod.year,
+                                                   dateBeginningPeriod.month)[1]
+        if dateBeginningPeriod != 15 and dateBeginningPeriod != daysInMonthBeginning:
+            raise ArgumentError("Periodic semi-monthly accrual model requires that the " +
+                                "date that would begin the period be on the 15th or " +
+                                "final day of the month")
+        periods = (date.year - dateBeginningPeriod.year) * 24
+        periods += (date.month - dateBeginningPeriod.month) * 2
+        if date.day == daysInMonth and dateBeginningPeriod.day == 15:
+            periods += 1
+        elif date.day == 15 and dateBeginningPeriod.day == daysInMonthBeginning:
+            periods -= 1
+        return periods / 24
 
     # pro rata
     periodStart = date - period
