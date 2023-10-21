@@ -13,6 +13,7 @@ class AccrualModel(Enum):
     ProRata = 0
     PeriodicMonthly = 1
     PeriodicWeekly = 2
+    PeriodicBiweekly = 3
 
 def nonZeroValuesInDelta(delta: relativedelta) -> list[str]:
     result: list[str] = []
@@ -41,6 +42,14 @@ def portionOfYear(date: date, period: relativedelta, accrualModel: AccrualModel)
             raise ArgumentError("Periodic weekly accrual model only works for periods " +
                                 "that are multiples of 7 days")
         return (period.days // 7) / 52
+    elif accrualModel == AccrualModel.PeriodicBiweekly:
+        if fieldsInPeriod != ['days']:
+            raise ArgumentError("Periodic biweekly accrual model does not support " +
+                                "periods containing non-day values")
+        if period.days % 14:
+            raise ArgumentError("Periodic weekly accrual model only works for periods " +
+                                "that are multiples of 14 days")
+        return (period.days // 14) / 26
 
     # pro rata
     periodStart = date - period
