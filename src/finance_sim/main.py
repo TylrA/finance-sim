@@ -13,9 +13,9 @@ import calendar
 class AccrualModel(Enum):
     ProRata = 0
     PeriodicMonthly = 1
-    PeriodicWeekly = 2
-    PeriodicBiweekly = 3
-    PeriodicSemiMonthly = 4
+    PeriodicSemiMonthly = 2
+    PeriodicWeekly = 3
+    PeriodicBiweekly = 4
 
 def nonZeroValuesInDelta(delta: relativedelta) -> list[str]:
     result: list[str] = []
@@ -36,22 +36,6 @@ def portionOfYear(date: date, period: relativedelta, accrualModel: AccrualModel)
             raise ArgumentError("Periodic monthly accrual model does not support periods " +
                                 "containing non-month, non-year values")
         return period.years + period.months / 12
-    elif accrualModel == AccrualModel.PeriodicWeekly:
-        if fieldsInPeriod != ['days']:
-            raise ArgumentError("Periodic weekly accrual model does not support periods " +
-                                "containing non-day values")
-        if period.days % 7:
-            raise ArgumentError("Periodic weekly accrual model only works for periods " +
-                                "that are multiples of 7 days")
-        return (period.days // 7) / 52
-    elif accrualModel == AccrualModel.PeriodicBiweekly:
-        if fieldsInPeriod != ['days']:
-            raise ArgumentError("Periodic biweekly accrual model does not support " +
-                                "periods containing non-day values")
-        if period.days % 14:
-            raise ArgumentError("Periodic weekly accrual model only works for periods " +
-                                "that are multiples of 14 days")
-        return (period.days // 14) / 26
     elif accrualModel == AccrualModel.PeriodicSemiMonthly:
         daysInMonth = calendar.monthrange(date.year, date.month)[1]
         if (
@@ -77,6 +61,22 @@ def portionOfYear(date: date, period: relativedelta, accrualModel: AccrualModel)
         elif date.day == 15 and dateBeginningPeriod.day == daysInMonthBeginning:
             periods -= 1
         return periods / 24
+    elif accrualModel == AccrualModel.PeriodicWeekly:
+        if fieldsInPeriod != ['days']:
+            raise ArgumentError("Periodic weekly accrual model does not support periods " +
+                                "containing non-day values")
+        if period.days % 7:
+            raise ArgumentError("Periodic weekly accrual model only works for periods " +
+                                "that are multiples of 7 days")
+        return (period.days // 7) / 52
+    elif accrualModel == AccrualModel.PeriodicBiweekly:
+        if fieldsInPeriod != ['days']:
+            raise ArgumentError("Periodic biweekly accrual model does not support " +
+                                "periods containing non-day values")
+        if period.days % 14:
+            raise ArgumentError("Periodic weekly accrual model only works for periods " +
+                                "that are multiples of 14 days")
+        return (period.days // 14) / 26
 
     # pro rata
     periodStart = date - period
