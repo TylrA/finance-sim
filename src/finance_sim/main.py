@@ -12,6 +12,7 @@ import sys
 class AccrualModel(Enum):
     ProRata = 0
     PeriodicMonthly = 1
+    PeriodicWeekly = 2
 
 def nonZeroValuesInDelta(delta: relativedelta) -> list[str]:
     result: list[str] = []
@@ -26,12 +27,20 @@ def nonZeroValuesInDelta(delta: relativedelta) -> list[str]:
     return result
 
 def portionOfYear(date: date, period: relativedelta, accrualModel: AccrualModel) -> float:
+    fieldsInPeriod = nonZeroValuesInDelta(period)
     if accrualModel == AccrualModel.PeriodicMonthly:
-        fieldsInPeriod = nonZeroValuesInDelta(period)
-        if fieldsInPeriod == ['months'] or fieldsInPeriod == ['years', 'months']:
-            return period.years + period.months / 12
-        raise ArgumentError("Periodic monthly accrual model only supports periods of " +
-                           "containing non-month values")
+        if fieldsInPeriod != ['months'] and fieldsInPeriod != ['years', 'months']:
+            raise ArgumentError("Periodic monthly accrual model does not support periods " +
+                                "containing non-month, non-year values")
+        return period.years + period.months / 12
+    elif accrualModel == AccrualModel.PeriodicWeekly:
+        if fieldsInPeriod != ['days']:
+            raise ArgumentError("Periodic weekly accrual model does not support periods " +
+                                "containing non-day values")
+        if period.days % 7:
+            raise ArgumentError("Periodic weekly accrual model only works for periods " +
+                                "that are multiples of 7 days")
+        return (period.days // 7) / 52
 
     # pro rata
     periodStart = date - period
