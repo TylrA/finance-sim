@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ctypes import ArgumentError
 
 from typing import Callable
 from dataclasses import dataclass
@@ -29,7 +30,7 @@ def portionOfYear(date: date, period: relativedelta, accrualModel: AccrualModel)
         fieldsInPeriod = nonZeroValuesInDelta(period)
         if fieldsInPeriod == ['months'] or fieldsInPeriod == ['years', 'months']:
             return period.years + period.months / 12
-        raise RuntimeError("Periodic monthly accrual model only supports periods of " +
+        raise ArgumentError("Periodic monthly accrual model only supports periods of " +
                            "containing non-month values")
 
     # pro rata
