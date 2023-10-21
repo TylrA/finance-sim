@@ -29,60 +29,79 @@ def nonZeroValuesInDelta(delta: relativedelta) -> list[str]:
     if delta.microseconds != 0: result.append('microseconds')
     return result
 
-def portionOfYear(date: date, period: relativedelta, accrualModel: AccrualModel) -> float:
+def _portionOfYearPeriodicMonthly(date: date, period: relativedelta):
     fieldsInPeriod = nonZeroValuesInDelta(period)
-    if accrualModel == AccrualModel.PeriodicMonthly:
-        if fieldsInPeriod != ['months'] and fieldsInPeriod != ['years', 'months']:
-            raise ArgumentError("Periodic monthly accrual model does not support periods " +
-                                "containing non-month, non-year values")
-        return period.years + period.months / 12
-    elif accrualModel == AccrualModel.PeriodicSemiMonthly:
-        daysInMonth = calendar.monthrange(date.year, date.month)[1]
-        if (
-            fieldsInPeriod != ['days'] and fieldsInPeriod != ['months', 'days'] and \
-            fieldsInPeriod != ['years', 'months', 'days']
-        ):
-            raise ArgumentError("Periodic semi-monthly accrual model does not support " +
-                                "periods containing non-day, non-month, non-year values")
-        if date.day != 15 and date.day != daysInMonth:
-            raise ArgumentError("Periodic semi-monthly accrual model does not support " +
-                                "dates not on the 15th or final day of the month")
-        dateBeginningPeriod = date - period
-        daysInMonthBeginning = calendar.monthrange(dateBeginningPeriod.year,
-                                                   dateBeginningPeriod.month)[1]
-        if dateBeginningPeriod != 15 and dateBeginningPeriod != daysInMonthBeginning:
-            raise ArgumentError("Periodic semi-monthly accrual model requires that the " +
-                                "date that would begin the period be on the 15th or " +
-                                "final day of the month")
-        periods = (date.year - dateBeginningPeriod.year) * 24
-        periods += (date.month - dateBeginningPeriod.month) * 2
-        if date.day == daysInMonth and dateBeginningPeriod.day == 15:
-            periods += 1
-        elif date.day == 15 and dateBeginningPeriod.day == daysInMonthBeginning:
-            periods -= 1
-        return periods / 24
-    elif accrualModel == AccrualModel.PeriodicWeekly:
-        if fieldsInPeriod != ['days']:
-            raise ArgumentError("Periodic weekly accrual model does not support periods " +
-                                "containing non-day values")
-        if period.days % 7:
-            raise ArgumentError("Periodic weekly accrual model only works for periods " +
-                                "that are multiples of 7 days")
-        return (period.days // 7) / 52
-    elif accrualModel == AccrualModel.PeriodicBiweekly:
-        if fieldsInPeriod != ['days']:
-            raise ArgumentError("Periodic biweekly accrual model does not support " +
-                                "periods containing non-day values")
-        if period.days % 14:
-            raise ArgumentError("Periodic weekly accrual model only works for periods " +
-                                "that are multiples of 14 days")
-        return (period.days // 14) / 26
+    if fieldsInPeriod != ['months'] and fieldsInPeriod != ['years', 'months']:
+        raise ArgumentError("Periodic monthly accrual model does not support periods " +
+                            "containing non-month, non-year values")
+    return period.years + period.months / 12
 
-    # pro rata
+def _portionOfYearPeriodicSemiMonthly(date: date, period: relativedelta):
+    fieldsInPeriod = nonZeroValuesInDelta
+    daysInMonth = calendar.monthrange(date.year, date.month)[1]
+    dateBeginningPeriod = date - period
+    daysInMonthBeginning = calendar.monthrange(dateBeginningPeriod.year,
+                                               dateBeginningPeriod.month)[1]
+
+    if (
+        fieldsInPeriod != ['days'] and fieldsInPeriod != ['months', 'days'] and \
+        fieldsInPeriod != ['years', 'months', 'days']
+    ):
+        raise ArgumentError("Periodic semi-monthly accrual model does not support " +
+                            "periods containing non-day, non-month, non-year values")
+    if date.day != 15 and date.day != daysInMonth:
+        raise ArgumentError("Periodic semi-monthly accrual model does not support " +
+                            "dates not on the 15th or final day of the month")
+    if dateBeginningPeriod != 15 and dateBeginningPeriod != daysInMonthBeginning:
+        raise ArgumentError("Periodic semi-monthly accrual model requires that the " +
+                            "date that would begin the period be on the 15th or " +
+                            "final day of the month")
+
+    periods = (date.year - dateBeginningPeriod.year) * 24
+    periods += (date.month - dateBeginningPeriod.month) * 2
+    if date.day == daysInMonth and dateBeginningPeriod.day == 15:
+        periods += 1
+    elif date.day == 15 and dateBeginningPeriod.day == daysInMonthBeginning:
+        periods -= 1
+    return periods / 24
+
+def _portionOfYearPeriodicWeekly(date: date, period: relativedelta):
+    fieldsInPeriod = nonZeroValuesInDelta(period)
+    if fieldsInPeriod != ['days']:
+        raise ArgumentError("Periodic weekly accrual model does not support periods " +
+                            "containing non-day values")
+    if period.days % 7:
+        raise ArgumentError("Periodic weekly accrual model only works for periods " +
+                            "that are multiples of 7 days")
+    return (period.days // 7) / 52
+
+def _portionOfYearPeriodicBiweekly(date: date, period: relativedelta):
+    fieldsInPeriod = nonZeroValuesInDelta(period)
+    if fieldsInPeriod != ['days']:
+        raise ArgumentError("Periodic biweekly accrual model does not support " +
+                            "periods containing non-day values")
+    if period.days % 14:
+        raise ArgumentError("Periodic weekly accrual model only works for periods " +
+                            "that are multiples of 14 days")
+    return (period.days // 14) / 26
+
+def _portionOfYearProRata(date: date, period: relativedelta):
     periodStart = date - period
     days = date.toordinal() - periodStart.toordinal()
     daysInYear = 366 if isleap(date.year) else 365
     return days / daysInYear
+
+def portionOfYear(date: date, period: relativedelta, accrualModel: AccrualModel) -> float:
+    if accrualModel == AccrualModel.PeriodicMonthly:
+        return _portionOfYearPeriodicMonthly(date, period)
+    elif accrualModel == AccrualModel.PeriodicSemiMonthly:
+        return _portionOfYearPeriodicSemiMonthly(date, period)
+    elif accrualModel == AccrualModel.PeriodicWeekly:
+        return _portionOfYearPeriodicWeekly(date, period)
+    elif accrualModel == AccrualModel.PeriodicBiweekly:
+        return _portionOfYearPeriodicBiweekly(date, period)
+    else: # pro rata
+        return _portionOfYearProRata(date, period)
 
 class ConstantGrowthAsset(object):
     '''
