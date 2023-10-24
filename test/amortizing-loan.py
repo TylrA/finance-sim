@@ -45,7 +45,7 @@ def testAmortizingLoanConstantPaymentCost():
         previousCash = state.cash
 
 def testAmortizingLoanInterestRate():
-    loan = AmortizingLoan('test', AccrualModel.ProRata, 0, 100000, 0.05, 20)
+    loan = AmortizingLoan('test', AccrualModel.PeriodicYearly, 0, 100000, 0.05, 20)
     state = FinanceState(date(2000, 1, 1))
     state.cash = 600000
     history = FinanceHistory(state)
