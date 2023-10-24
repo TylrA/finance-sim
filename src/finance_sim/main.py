@@ -27,19 +27,29 @@ class ConstantGrowthAsset(object):
         return ConstantGrowthAsset(value, self.appreciation)
 
 class AmortizingLoan(object):
+    name: str
+    accrualModel: AccrualModel
+    principle: float
+    loanAmount: float
+    rate: float
+    term: float
+    payment: float
+    
     def __init__(self,
                  name: str,
                  accrualModel: AccrualModel,
                  initialPrinciple: float = 0,
                  loanAmount: float = 0,
                  rate: float = 0.05,
-                 remainingTermInYears: float = 20):
+                 remainingTermInYears: float = 20,
+                 payment: float = -1):
         self.name = name
         self.accrualModel = accrualModel
         self.principle = initialPrinciple
         self.loanAmount = loanAmount
         self.rate = rate
         self.term = remainingTermInYears
+        self.payment = payment
 
     def copy(self):
         result = AmortizingLoan(self.name,
@@ -47,7 +57,8 @@ class AmortizingLoan(object):
                                 self.principle,
                                 self.loanAmount,
                                 self.rate,
-                                self.term)
+                                self.term,
+                                self.payment)
         return result
         
 
@@ -133,14 +144,16 @@ def makeAmortizedPayments(history: FinanceHistory,
     for name, amortizingLoan in result.amortizingLoans.items():
         newLoan = amortizingLoan.copy()
         yearFraction = portionOfYear(date, period, amortizingLoan.accrualModel)
-        i = (1 + newLoan.rate) ** yearFraction - 1
-        numerator = (newLoan.loanAmount - newLoan.principle) * i
-        denominator = 1 - (1 + i) ** -(newLoan.term / yearFraction)
-        paymentAmount = numerator / denominator
-        newLoan.principle += paymentAmount - (newLoan.loanAmount - newLoan.principle) * \
+        if newLoan.payment < 0:
+            i = (1 + newLoan.rate) ** yearFraction - 1
+            numerator = (newLoan.loanAmount - newLoan.principle) * i
+            denominator = 1 - (1 + i) ** -(newLoan.term / yearFraction)
+            paymentAmount = numerator / denominator
+            newLoan.payment = paymentAmount
+        newLoan.principle += newLoan.payment - (newLoan.loanAmount - newLoan.principle) * \
             newLoan.rate * yearFraction
         newLoan.term -= yearFraction
-        result.cash -= paymentAmount
+        result.cash -= newLoan.payment
         result.amortizingLoans[name] = newLoan
     return result
 
