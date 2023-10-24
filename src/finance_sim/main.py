@@ -5,6 +5,7 @@ import sys
 from dataclasses import dataclass
 from datetime import date
 from dateutil.relativedelta import relativedelta
+from math import pow
 from typing import Callable
 
 from .scheduling import AccrualModel, portionOfYear
@@ -23,8 +24,8 @@ class ConstantGrowthAsset(object):
 
     def appreciate(self, date: date, period: relativedelta) -> ConstantGrowthAsset:
         portion = portionOfYear(date, period, self.accrualModel)
-        value = self.value * (1 + self.appreciation) ** portion
-        return ConstantGrowthAsset(value, self.appreciation)
+        value = self.value * pow(1 + self.appreciation, portion)
+        return ConstantGrowthAsset(self.accrualModel, value, self.appreciation)
 
 class AmortizingLoan(object):
     name: str
@@ -144,14 +145,13 @@ def makeAmortizedPayments(history: FinanceHistory,
     for name, amortizingLoan in result.amortizingLoans.items():
         newLoan = amortizingLoan.copy()
         yearFraction = portionOfYear(date, period, amortizingLoan.accrualModel)
+        adjustedRate = pow(1 + newLoan.rate, yearFraction) - 1
+        interestPaid = (newLoan.loanAmount - newLoan.principle) * adjustedRate
         if newLoan.payment < 0:
-            i = (1 + newLoan.rate) ** yearFraction - 1
-            numerator = (newLoan.loanAmount - newLoan.principle) * i
-            denominator = 1 - (1 + i) ** -(newLoan.term / yearFraction)
-            paymentAmount = numerator / denominator
+            denominator = 1 - pow(1 + adjustedRate, -(newLoan.term / yearFraction))
+            paymentAmount = interestPaid / denominator
             newLoan.payment = paymentAmount
-        newLoan.principle += newLoan.payment - (newLoan.loanAmount - newLoan.principle) * \
-            newLoan.rate * yearFraction
+        newLoan.principle += newLoan.payment - interestPaid
         newLoan.term -= yearFraction
         result.cash -= newLoan.payment
         result.amortizingLoans[name] = newLoan
