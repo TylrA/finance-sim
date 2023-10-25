@@ -44,7 +44,7 @@ def _portionOfYearPeriodicSemiMonthly(date: date, period: relativedelta):
     if date.day != 15 and date.day != daysInMonth:
         raise ArgumentError("Periodic semi-monthly accrual model does not support " +
                             "dates not on the 15th or final day of the month")
-    if dateBeginningPeriod != 15 and dateBeginningPeriod != daysInMonthBeginning:
+    if dateBeginningPeriod.day != 15 and dateBeginningPeriod.day != daysInMonthBeginning:
         raise ArgumentError("Periodic semi-monthly accrual model requires that the " +
                             "date that would begin the period be on the 15th or " +
                             "final day of the month")
