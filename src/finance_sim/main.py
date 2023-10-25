@@ -163,6 +163,7 @@ class TaxBracket(object):
     income: float
 
 def taxPaymentSchedule(frequency: relativedelta,
+                       accrualModel: AccrualModel,
                        brackets: list[TaxBracket]) -> FinanceEvent:
     if len(brackets) < 1:
         raise RuntimeError('there must be at least one tax bracket')
@@ -179,7 +180,9 @@ def taxPaymentSchedule(frequency: relativedelta,
         if (date - taxPeriod) <= (date - frequency):
             taxDue = 0
             for bracket in brackets[::-1]:
-                adjustedIncomeThreshold = bracket.income * portionOfYear(date, taxPeriod)
+                adjustedIncomeThreshold = bracket.income * portionOfYear(date,
+                                                                         taxPeriod,
+                                                                         accrualModel)
                 if result.taxableIncome > adjustedIncomeThreshold:
                     marginAboveBracket = result.taxableIncome - adjustedIncomeThreshold
                     taxDue += bracket.rate * marginAboveBracket
