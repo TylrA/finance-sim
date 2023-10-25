@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ctypes import ArgumentError
 
 import sys
 
@@ -71,7 +72,6 @@ class FinanceState(object):
         self.amortizingLoans: dict[str, AmortizingLoan] = {}
         self.taxableIncome: float = 0
         self.taxesPaid: float = 0
-        self.lastDateTaxesPaid: date = date
 
     def copy(self):
         result = FinanceState()
@@ -81,7 +81,6 @@ class FinanceState(object):
         result.amortizingLoans = self.amortizingLoans
         result.taxableIncome = self.taxableIncome
         result.taxesPaid = self.taxesPaid
-        result.lastDateTaxesPaid = self.lastDateTaxesPaid
         return result
 
 class FinanceHistory(object):
@@ -166,22 +165,20 @@ def taxPaymentSchedule(frequency: relativedelta,
                        accrualModel: AccrualModel,
                        brackets: list[TaxBracket]) -> FinanceEvent:
     if len(brackets) < 1:
-        raise RuntimeError('there must be at least one tax bracket')
+        raise ArgumentError('there must be at least one tax bracket')
     if brackets[0].income != 0.0:
-        raise RuntimeError('brackets must start with a zero income bracket')
+        raise ArgumentError('brackets must start with a zero income bracket')
 
     def payTaxes(history: FinanceHistory,
                  state: FinanceState,
                  date: date,
                  period: relativedelta) -> FinanceState:
         result = state.copy()
-        taxPeriod = relativedelta(seconds=int((date - result.lastDateTaxesPaid)
-                                              .total_seconds()))
-        if (date - taxPeriod) <= (date - frequency):
+        if (date - period) <= (date - frequency):
             taxDue = 0
             for bracket in brackets[::-1]:
                 adjustedIncomeThreshold = bracket.income * portionOfYear(date,
-                                                                         taxPeriod,
+                                                                         period,
                                                                          accrualModel)
                 if result.taxableIncome > adjustedIncomeThreshold:
                     marginAboveBracket = result.taxableIncome - adjustedIncomeThreshold
@@ -189,7 +186,6 @@ def taxPaymentSchedule(frequency: relativedelta,
                     result.taxableIncome -= marginAboveBracket
             result.cash -= taxDue
             result.taxesPaid += taxDue
-            result.lastDateTaxesPaid = date
         return result
 
     return payTaxes
