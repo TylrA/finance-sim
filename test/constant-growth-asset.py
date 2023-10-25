@@ -20,7 +20,7 @@ def testConstantGrowthMonthly():
 def testConstantGrowthAnnually():
     initialState = FinanceState(date(2001, 1, 1))
     initialState.constantGrowthAssets.append(
-        ConstantGrowthAsset(AccrualModel.ProRata, 100, 0.5))
+        ConstantGrowthAsset(AccrualModel.PeriodicYearly, 100, 0.5))
     financeData = FinanceHistory(initialState)
     financeData.setEventComponents([appreciateConstantAssets])
     delta = relativedelta(years=1)
