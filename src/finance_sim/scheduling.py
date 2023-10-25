@@ -26,22 +26,19 @@ def nonZeroValuesInDelta(delta: relativedelta) -> list[str]:
 
 def _portionOfYearPeriodicMonthly(date: date, period: relativedelta):
     fieldsInPeriod = nonZeroValuesInDelta(period)
-    if fieldsInPeriod != ['months'] and fieldsInPeriod != ['years', 'months']:
+    if any([field not in ['months', 'years'] for field in fieldsInPeriod]):
         raise ArgumentError("Periodic monthly accrual model does not support periods " +
                             "containing non-month, non-year values")
     return period.years + period.months / 12
 
 def _portionOfYearPeriodicSemiMonthly(date: date, period: relativedelta):
-    fieldsInPeriod = nonZeroValuesInDelta
+    fieldsInPeriod = nonZeroValuesInDelta(period)
     daysInMonth = monthrange(date.year, date.month)[1]
     dateBeginningPeriod = date - period
     daysInMonthBeginning = monthrange(dateBeginningPeriod.year,
                                       dateBeginningPeriod.month)[1]
 
-    if (
-        fieldsInPeriod != ['days'] and fieldsInPeriod != ['months', 'days'] and \
-        fieldsInPeriod != ['years', 'months', 'days']
-    ):
+    if any([field not in ['days', 'months', 'years'] for field in fieldsInPeriod]):
         raise ArgumentError("Periodic semi-monthly accrual model does not support " +
                             "periods containing non-day, non-month, non-year values")
     if date.day != 15 and date.day != daysInMonth:
