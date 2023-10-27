@@ -8,18 +8,21 @@ time:
   # time period in years
   period: 30
 
-initialValues:
-- type: cash
-  value: 100
-  name: Savings
-- type: constant-growth-asset
-  name: CD Savings
-  value: 500
-  appreciation: 0.05
+initialState:
+  date: 2000-01-01
+  values:
+  - type: cash
+    value: 100
+    name: Savings
+  - type: constant-growth-asset
+    name: CD Savings
+    value: 500
+    appreciation: 0.05
 
-scheduledValues:
+scheduledStateUpdates:
 - schedule:
-    date: 2030-05-14
+    startDate: 2030-05-15
+    endDate: 2040-04-30
   type: cash
   value: 5000
   name: inheritance
