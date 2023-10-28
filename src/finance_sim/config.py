@@ -1,11 +1,11 @@
 import yaml
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date
 from enum import Enum
 
 @dataclass
 class TimeConfig(object):
-    granularity: str
+    granularity: date
     period: int
 
 class StateType(Enum):
@@ -21,7 +21,7 @@ class StateConfig(object):
 @dataclass
 class ScheduledState(object):
     state: StateConfig
-    schedule: datetime
+    schedule: date
 
 @dataclass
 class ScenarioConfig(object):
@@ -31,4 +31,14 @@ class ScenarioConfig(object):
 
 def parseConfig(path: str) -> ScenarioConfig:
     with open(path, 'r') as configFile:
-        return yaml.parse(configFile)
+        rawConfig = yaml.parse(configFile)
+        if 'time' not in rawConfig:
+            raise RuntimeError('Configuration requires a "time" field')
+        if 'initialState' not in rawConfig:
+            raise RuntimeError('Configuration requires an "initialState" field')
+        rawTimeConfig = rawConfig['time']
+        if 'granularity' not in rawTimeConfig or 'period' not in rawTimeConfig:
+            raise RuntimeError('"time" field requires "granularity" and "period"')
+        timeConfig = TimeConfig(
+            granularity=date.fromisoformat(rawTimeConfig['granularity']),
+            period=int(rawTimeConfig['period']))
