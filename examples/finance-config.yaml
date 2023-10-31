@@ -3,8 +3,17 @@ time:
   # d: days
   # w: weeks
   # M: months
+  # M2: semimonthly
   # Y: years
   granularity: 1M
+  # if accrual is different from granularity, is it pro rata? periodic? how frequent?
+  # "pro rata"
+  # "periodic monthly"
+  # "periodic semi monthly"
+  # "periodic weekly"
+  # "periodic biweekly"
+  # "periodic yearly"
+  accrualModel: periodic monthly
   # time period in years
   period: 30
 
