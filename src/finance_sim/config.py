@@ -6,7 +6,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from enum import Enum
 
-from finance_sim.scheduling import AccrualModel
+from finance_sim.scheduling import AccrualModel, nonZeroValuesInDelta
 
 @dataclass
 class TimeConfig(object):
@@ -32,7 +32,7 @@ class ScheduledState(object):
 @dataclass
 class ScenarioConfig(object):
     time: TimeConfig
-    initialValues: list[StateConfig]
+    initialState: list[StateConfig]
     scheduledValues: list[ScheduledState]
 
 def parseGranularity(granularityStr: str) -> relativedelta:
@@ -81,6 +81,12 @@ def parseAccrualModel(accrualModelStr: str) -> AccrualModel:
 
     raise RuntimeError('None of the supported accrual model was used')
 
+def parseStateConfig(rawStateConfig) -> list[StateConfig]:
+    pass
+
+def parseScheduledStateUpdates(rawScheduledUpdates) -> list[ScheduledState]:
+    pass
+
 def parseConfig(path: str) -> ScenarioConfig:
     with open(path, 'r') as configFile:
         rawConfig = yaml.parse(configFile)
@@ -89,9 +95,26 @@ def parseConfig(path: str) -> ScenarioConfig:
         if 'initialState' not in rawConfig:
             raise RuntimeError('Configuration requires an "initialState" field')
         rawTimeConfig = rawConfig['time']
-        if 'period' not in rawTimeConfig:
-            raise RuntimeError('"time" field requires "period"')
+        if 'period' not in rawTimeConfig and \
+           'granularity' not in rawTimeConfig and \
+           'accrualModel' not in rawTimeConfig:
+            raise RuntimeError('"time" field requires "granularity", "accrualModel", ' +
+                               'and "period"')
         timeConfig = TimeConfig(
-            granularity=.fromisoformat(rawTimeConfig['granularity']),
+            granularity=parseGranularity(rawTimeConfig['granularity']),
+            accrualModel=parseAccrualModel(rawTimeConfig['accrualModel']),
             period=int(rawTimeConfig['period']))
-        
+
+        if 'initialState' not in rawConfig:
+            raise RuntimeError('Configuration requires an "initialState" field')
+
+        stateConfig = parseStateConfig(rawConfig['initialState'])
+
+        if 'scheduledStateUpdates' not in rawConfig:
+            raise RuntimeError('Configuration requires a "scheduledStateUpdates" field')
+
+        scheduledUpdates = parseScheduledStateUpdates(rawConfig['scheduledStateUpdates'])
+
+        return ScenarioConfig(time = timeConfig,
+                              initialState = stateConfig,
+                              scheduledValues = scheduledUpdates)
