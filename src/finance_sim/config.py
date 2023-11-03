@@ -13,6 +13,7 @@ class TimeConfig(object):
     granularity: relativedelta
     accrualModel: AccrualModel
     period: int
+    startingDate: date
 
 class StateType(Enum):
     cash = 1
@@ -82,7 +83,20 @@ def parseAccrualModel(accrualModelStr: str) -> AccrualModel:
     raise RuntimeError('None of the supported accrual model was used')
 
 def parseStateConfig(rawStateConfig) -> list[StateConfig]:
-    pass
+    values = []
+    for state in rawStateConfig['values']:
+        if state['type'] == 'cash':
+            stateType = StateType.cash
+        elif state['type'] == 'constant-growth-asset':
+            stateType = StateType.constantGrowthAsset
+        else:
+            raise RuntimeError('state type only supports "cash" and ' +
+                               '"constant-growth-asset"')
+
+        values.append(StateConfig(type=stateType,
+                                  value=state['value'],
+                                  name=state['name']))
+    return values
 
 def parseScheduledStateUpdates(rawScheduledUpdates) -> list[ScheduledState]:
     pass
@@ -103,7 +117,8 @@ def parseConfig(path: str) -> ScenarioConfig:
         timeConfig = TimeConfig(
             granularity=parseGranularity(rawTimeConfig['granularity']),
             accrualModel=parseAccrualModel(rawTimeConfig['accrualModel']),
-            period=int(rawTimeConfig['period']))
+            period=int(rawTimeConfig['period']),
+            date=date.fromisoformat(rawTimeConfig['startingDate']))
 
         if 'initialState' not in rawConfig:
             raise RuntimeError('Configuration requires an "initialState" field')

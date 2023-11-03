@@ -16,9 +16,10 @@ time:
   accrualModel: periodic monthly
   # time period in years
   period: 30
+  # starting date
+  startingDate: 2000-01-01
 
 initialState:
-  date: 2000-01-01
   values:
   - type: cash
     value: 100
