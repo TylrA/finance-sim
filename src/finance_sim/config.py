@@ -82,21 +82,21 @@ def parseAccrualModel(accrualModelStr: str) -> AccrualModel:
 
     raise RuntimeError('None of the supported accrual model was used')
 
-def parseStateConfig(rawStateConfig) -> list[StateConfig]:
-    values = []
-    for state in rawStateConfig['values']:
-        if state['type'] == 'cash':
-            stateType = StateType.cash
-        elif state['type'] == 'constant-growth-asset':
-            stateType = StateType.constantGrowthAsset
-        else:
-            raise RuntimeError('state type only supports "cash" and ' +
-                               '"constant-growth-asset"')
+def parseState(stateConfig) -> StateConfig:
+    if stateConfig['type'] == 'cash':
+        stateType = StateType.cash
+    elif stateConfig['type'] == 'constant-growth-asset':
+        stateType = StateType.constantGrowthAsset
+    else:
+        raise RuntimeError('stateConfig type only supports "cash" and ' +
+                           '"constant-growth-asset"')
 
-        values.append(StateConfig(type=stateType,
-                                  value=state['value'],
-                                  name=state['name']))
-    return values
+    return StateConfig(type=stateType,
+                       value=stateConfig['value'],
+                       name=stateConfig['name'])
+
+def parseStateConfig(rawStateConfig) -> list[StateConfig]:
+    return [parseState(state) for state in rawStateConfig['values']]
 
 def parseScheduledStateUpdates(rawScheduledUpdates) -> list[ScheduledState]:
     pass
