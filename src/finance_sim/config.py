@@ -6,7 +6,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from enum import Enum
 
-from finance_sim.scheduling import AccrualModel, nonZeroValuesInDelta
+from finance_sim.scheduling import AccrualModel
 
 @dataclass
 class TimeConfig(object):
