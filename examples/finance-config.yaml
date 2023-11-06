@@ -34,6 +34,7 @@ scheduledStateUpdates:
 - schedule:
     startDate: 2030-05-15
     endDate: 2040-04-30
-  type: cash
-  value: 5000
-  name: inheritance
+  value:
+    type: cash
+    value: 5000
+    name: inheritance

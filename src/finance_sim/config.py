@@ -28,7 +28,8 @@ class StateConfig(object):
 @dataclass
 class ScheduledState(object):
     state: StateConfig
-    schedule: date
+    startDate: date
+    endDate: date
 
 @dataclass
 class ScenarioConfig(object):
@@ -99,7 +100,14 @@ def parseStateConfig(rawStateConfig) -> list[StateConfig]:
     return [parseState(state) for state in rawStateConfig['values']]
 
 def parseScheduledStateUpdates(rawScheduledUpdates) -> list[ScheduledState]:
-    pass
+    result: list[ScheduledState] = []
+    for scheduledUpdate in rawScheduledUpdates:
+        startDate = date.fromisoformat(scheduledUpdate['startDate'])
+        endDate = date.fromisoformat(scheduledUpdate['endDate'])
+        result.append(ScheduledState(startDate=startDate,
+                                     endDate=endDate,
+                                     state=parseState(scheduledUpdate['value'])))
+    return result
 
 def parseConfig(path: str) -> ScenarioConfig:
     with open(path, 'r') as configFile:
@@ -118,7 +126,7 @@ def parseConfig(path: str) -> ScenarioConfig:
             granularity=parseGranularity(rawTimeConfig['granularity']),
             accrualModel=parseAccrualModel(rawTimeConfig['accrualModel']),
             period=int(rawTimeConfig['period']),
-            date=date.fromisoformat(rawTimeConfig['startingDate']))
+            startingDate=date.fromisoformat(rawTimeConfig['startingDate']))
 
         if 'initialState' not in rawConfig:
             raise RuntimeError('Configuration requires an "initialState" field')
