@@ -111,7 +111,7 @@ def _parseScheduledStateUpdates(rawScheduledUpdates) -> list[ScheduledState]:
 
 def parseConfig(path: str) -> ScenarioConfig:
     with open(path, 'r') as configFile:
-        rawConfig = yaml.parse(configFile)
+        rawConfig = yaml.safe_load(configFile)
         if 'time' not in rawConfig:
             raise RuntimeError('Configuration requires a "time" field')
         if 'initialState' not in rawConfig:
