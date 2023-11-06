@@ -37,7 +37,7 @@ class ScenarioConfig(object):
     initialState: list[StateConfig]
     scheduledValues: list[ScheduledState]
 
-def parseGranularity(granularityStr: str) -> relativedelta:
+def _parseGranularity(granularityStr: str) -> relativedelta:
     pattern = r'(\d+)\s*(d|w|M2?|Y)'
     match = re.match(pattern, granularityStr)
     if not match:
@@ -60,7 +60,7 @@ def parseGranularity(granularityStr: str) -> relativedelta:
 
     raise RuntimeError('None of the supported units was used')
 
-def parseAccrualModel(accrualModelStr: str) -> AccrualModel:
+def _parseAccrualModel(accrualModelStr: str) -> AccrualModel:
     pattern = r'(pro rata|periodic (?:monthly|semi ?monthly|weekly|biweekly|yearly))'
     match = re.match(pattern, accrualModelStr)
     if not match:
@@ -83,7 +83,7 @@ def parseAccrualModel(accrualModelStr: str) -> AccrualModel:
 
     raise RuntimeError('None of the supported accrual model was used')
 
-def parseState(stateConfig) -> StateConfig:
+def _parseState(stateConfig) -> StateConfig:
     if stateConfig['type'] == 'cash':
         stateType = StateType.cash
     elif stateConfig['type'] == 'constant-growth-asset':
@@ -96,17 +96,17 @@ def parseState(stateConfig) -> StateConfig:
                        value=stateConfig['value'],
                        name=stateConfig['name'])
 
-def parseStateConfig(rawStateConfig) -> list[StateConfig]:
-    return [parseState(state) for state in rawStateConfig['values']]
+def _parseStateConfig(rawStateConfig) -> list[StateConfig]:
+    return [_parseState(state) for state in rawStateConfig['values']]
 
-def parseScheduledStateUpdates(rawScheduledUpdates) -> list[ScheduledState]:
+def _parseScheduledStateUpdates(rawScheduledUpdates) -> list[ScheduledState]:
     result: list[ScheduledState] = []
     for scheduledUpdate in rawScheduledUpdates:
         startDate = date.fromisoformat(scheduledUpdate['startDate'])
         endDate = date.fromisoformat(scheduledUpdate['endDate'])
         result.append(ScheduledState(startDate=startDate,
                                      endDate=endDate,
-                                     state=parseState(scheduledUpdate['value'])))
+                                     state=_parseState(scheduledUpdate['value'])))
     return result
 
 def parseConfig(path: str) -> ScenarioConfig:
@@ -123,20 +123,20 @@ def parseConfig(path: str) -> ScenarioConfig:
             raise RuntimeError('"time" field requires "granularity", "accrualModel", ' +
                                'and "period"')
         timeConfig = TimeConfig(
-            granularity=parseGranularity(rawTimeConfig['granularity']),
-            accrualModel=parseAccrualModel(rawTimeConfig['accrualModel']),
+            granularity=_parseGranularity(rawTimeConfig['granularity']),
+            accrualModel=_parseAccrualModel(rawTimeConfig['accrualModel']),
             period=int(rawTimeConfig['period']),
             startingDate=date.fromisoformat(rawTimeConfig['startingDate']))
 
         if 'initialState' not in rawConfig:
             raise RuntimeError('Configuration requires an "initialState" field')
 
-        stateConfig = parseStateConfig(rawConfig['initialState'])
+        stateConfig = _parseStateConfig(rawConfig['initialState'])
 
         if 'scheduledStateUpdates' not in rawConfig:
             raise RuntimeError('Configuration requires a "scheduledStateUpdates" field')
 
-        scheduledUpdates = parseScheduledStateUpdates(rawConfig['scheduledStateUpdates'])
+        scheduledUpdates = _parseScheduledStateUpdates(rawConfig['scheduledStateUpdates'])
 
         return ScenarioConfig(time = timeConfig,
                               initialState = stateConfig,
