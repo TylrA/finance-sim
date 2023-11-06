@@ -45,8 +45,8 @@ def _parseGranularity(granularityStr: str) -> relativedelta:
                             .format(pattern, granularityStr))
 
     groups = match.groups()
-    value = int(groups[1])
-    unit = groups[2]
+    value = int(groups[0])
+    unit = groups[1]
     if unit == 'd':
         return relativedelta(days = value)
     if unit == 'w':
@@ -102,8 +102,8 @@ def _parseStateConfig(rawStateConfig) -> list[StateConfig]:
 def _parseScheduledStateUpdates(rawScheduledUpdates) -> list[ScheduledState]:
     result: list[ScheduledState] = []
     for scheduledUpdate in rawScheduledUpdates:
-        startDate = date.fromisoformat(scheduledUpdate['startDate'])
-        endDate = date.fromisoformat(scheduledUpdate['endDate'])
+        startDate = scheduledUpdate['schedule']['startDate']
+        endDate = scheduledUpdate['schedule']['endDate']
         result.append(ScheduledState(startDate=startDate,
                                      endDate=endDate,
                                      state=_parseState(scheduledUpdate['value'])))
@@ -126,7 +126,7 @@ def parseConfig(path: str) -> ScenarioConfig:
             granularity=_parseGranularity(rawTimeConfig['granularity']),
             accrualModel=_parseAccrualModel(rawTimeConfig['accrualModel']),
             period=int(rawTimeConfig['period']),
-            startingDate=date.fromisoformat(rawTimeConfig['startingDate']))
+            startingDate=rawTimeConfig['startingDate'])
 
         if 'initialState' not in rawConfig:
             raise RuntimeError('Configuration requires an "initialState" field')
