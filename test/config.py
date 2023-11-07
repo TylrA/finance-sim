@@ -22,3 +22,13 @@ def testParseConfigInitialState():
     assert config.initialState[1].name == "CD Savings"
     assert config.initialState[1].value == 500
     # todo: add appreciation
+
+def testParseConfigScheduledUpdates():
+    path = 'examples/finance-config.yaml'
+    config = parseConfig(path)
+    assert len(config.scheduledValues) == 1
+    assert config.scheduledValues[0].startDate == date(2030, 5, 15)
+    assert config.scheduledValues[0].endDate == date(2040, 4, 30)
+    assert config.scheduledValues[0].state.name == "inheritance"
+    assert config.scheduledValues[0].state.type == StateType.cash
+    assert config.scheduledValues[0].state.value == 5000
