@@ -3,23 +3,41 @@ time:
   # d: days
   # w: weeks
   # M: months
+  # M2: semimonthly
   # Y: years
   granularity: 1M
+  # if accrual is different from granularity, is it pro rata? periodic? how frequent?
+  # "pro rata"
+  # "periodic monthly"
+  # "periodic semi monthly"
+  # "periodic weekly"
+  # "periodic biweekly"
+  # "periodic yearly"
+  accrualModel: periodic monthly
   # time period in years
   period: 30
+  # starting date
+  startingDate: 2000-01-01
 
-initialValues:
-- type: cash
-  value: 100
-  name: Savings
-- type: constant-growth-asset
-  name: CD Savings
-  value: 500
-  appreciation: 0.05
+initialState:
+  values:
+  - type: cash
+    data:
+      value: 100
+    name: Savings
+  - type: constant-growth-asset
+    name: CD Savings
+    data:
+      value: 500
+      appreciation: 0.05
 
-scheduledValues:
+# optional
+scheduledStateUpdates:
 - schedule:
-    date: 2030-05-14
-  type: cash
-  value: 5000
-  name: inheritance
+    startDate: 2030-05-15
+    endDate: 2040-04-30
+  value:
+    type: cash
+    data:
+      value: 5000
+    name: inheritance
