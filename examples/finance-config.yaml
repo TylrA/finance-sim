@@ -22,12 +22,14 @@ time:
 initialState:
   values:
   - type: cash
-    value: 100
+    data:
+      value: 100
     name: Savings
   - type: constant-growth-asset
     name: CD Savings
-    value: 500
-    appreciation: 0.05
+    data:
+      value: 500
+      appreciation: 0.05
 
 # optional
 scheduledStateUpdates:
@@ -36,5 +38,6 @@ scheduledStateUpdates:
     endDate: 2040-04-30
   value:
     type: cash
-    value: 5000
+    data:
+      value: 5000
     name: inheritance

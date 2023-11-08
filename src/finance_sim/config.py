@@ -22,8 +22,8 @@ class StateType(Enum):
 @dataclass
 class StateConfig(object):
     type: StateType
-    value: float
     name: str
+    data: dict[str, object]
 
 @dataclass
 class ScheduledState(object):
@@ -93,7 +93,7 @@ def _parseState(stateConfig) -> StateConfig:
                            '"constant-growth-asset"')
 
     return StateConfig(type=stateType,
-                       value=stateConfig['value'],
+                       data=stateConfig['data'],
                        name=stateConfig['name'])
 
 def _parseStateConfig(rawStateConfig) -> list[StateConfig]:
