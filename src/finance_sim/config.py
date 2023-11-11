@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from enum import Enum
+from typing import Any
 
 from finance_sim.scheduling import AccrualModel
 
@@ -23,7 +24,7 @@ class StateType(Enum):
 class StateConfig(object):
     type: StateType
     name: str
-    data: dict[str, object]
+    data: dict[str, Any]
 
 @dataclass
 class ScheduledState(object):
