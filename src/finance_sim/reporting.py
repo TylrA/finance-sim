@@ -1,10 +1,14 @@
+from typing import Tuple
 from finance_sim.config import ScenarioConfig, StateType
 import finance_sim.main as finSim
 
 from datetime import date
+from dateutil.relativedelta import relativedelta
 from pandas import DataFrame
 
-def assembleInitialState(config: ScenarioConfig) \
+from finance_sim.scheduling import AccrualModel
+
+def _assembleInitialState(config: ScenarioConfig) \
     -> finSim.FinanceState:
     result = finSim.FinanceState(config.time.startingDate)
     for stateConfig in config.initialState:
@@ -18,7 +22,31 @@ def assembleInitialState(config: ScenarioConfig) \
                     annualAppreciation=stateConfig.data['appreciation']))
     return result
 
+def _nextDate(eventDate: date, accrualModel: AccrualModel) -> Tuple[date, relativedelta]:
+    if accrualModel == AccrualModel.PeriodicMonthly:
+        delta = relativedelta(months=1)
+        return eventDate + delta, delta
+    elif accrualModel == AccrualModel.PeriodicSemiMonthly:
+        # todo
+        pass
+    elif accrualModel == AccrualModel.PeriodicWeekly:
+        delta = relativedelta(days=7)
+        return eventDate + delta, delta
+    elif accrualModel == AccrualModel.PeriodicBiweekly:
+        delta = relativedelta(days=14)
+        return eventDate + delta, delta
+    elif accrualModel == AccrualModel.PeriodicYearly:
+        delta = relativedelta(years=1)
+        return eventDate + delta, delta
+    return date(2000, 1, 1), relativedelta(months=0)
+
+def _simulate(config: ScenarioConfig, history: finSim.FinanceHistory):
+    eventDate = config.time.startingDate
+    while eventDate < (config.time.startingDate + relativedelta(years=config.time.period)):
+        pass
+
 def report(config: ScenarioConfig) -> DataFrame:
-    initialState = assembleInitialState(config)
+    initialState = _assembleInitialState(config)
     history = finSim.FinanceHistory(initialState)
+    
     return DataFrame()
