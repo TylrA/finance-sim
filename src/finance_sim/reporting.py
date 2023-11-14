@@ -2,6 +2,7 @@ from typing import Tuple
 from finance_sim.config import ScenarioConfig, StateType
 import finance_sim.main as finSim
 
+from calendar import monthrange
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from pandas import DataFrame
@@ -27,8 +28,12 @@ def _nextDate(eventDate: date, accrualModel: AccrualModel) -> Tuple[date, relati
         delta = relativedelta(months=1)
         return eventDate + delta, delta
     elif accrualModel == AccrualModel.PeriodicSemiMonthly:
-        # todo
-        pass
+        if eventDate.day == 15:
+            delta = relativedelta(
+                days = monthrange(eventDate.year, eventDate.month)[1] - 15)
+        else:
+            delta = relativedelta(days=15)
+        return eventDate + delta, delta
     elif accrualModel == AccrualModel.PeriodicWeekly:
         delta = relativedelta(days=7)
         return eventDate + delta, delta
