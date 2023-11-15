@@ -46,12 +46,14 @@ def _nextDate(eventDate: date, accrualModel: AccrualModel) -> Tuple[date, relati
     return date(2000, 1, 1), relativedelta(months=0)
 
 def _simulate(config: ScenarioConfig, history: finSim.FinanceHistory):
-    eventDate = config.time.startingDate
+    accrualModel = config.time.accrualModel
+    eventDate, delta = _nextDate(config.time.startingDate, accrualModel)
     while eventDate < (config.time.startingDate + relativedelta(years=config.time.period)):
-        pass
+        history.passEvent(eventDate, delta)
+        eventDate, delta = _nextDate(eventDate, accrualModel)
 
 def report(config: ScenarioConfig) -> DataFrame:
     initialState = _assembleInitialState(config)
     history = finSim.FinanceHistory(initialState)
-    
+    _simulate(config, history)
     return DataFrame()
