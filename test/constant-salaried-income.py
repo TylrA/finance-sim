@@ -12,7 +12,7 @@ def testSalariedIncomeMonthly():
     delta = relativedelta(months=1)
     for month in range(2, 100):
         financeData.passEvent(date(2000 + (month) // 12, ((month - 1) % 12) + 1, 1), delta)
-        newCash = financeData.latestEvent().cash
+        newCash = financeData.latestState().cash
         assert newCash == pytest.approx(previousCash + 10)
         previousCash = newCash
     
@@ -32,7 +32,7 @@ def testSalariedIncomeSemiMonthly():
         else:
             delta = relativedelta(days = 15)
         financeData.passEvent(adjustedDate, delta)
-        newCash = financeData.latestEvent().cash
+        newCash = financeData.latestState().cash
         assert newCash == pytest.approx(previousCash + 5)
         previousCash = newCash
     
@@ -44,7 +44,7 @@ def testSalariedIncomeSemiAnnual():
     for year in range(2000, 2006):
         for month in [1, 6]:
             financeData.passEvent(date(year, month, 1), relativedelta(months=6))
-            newCash = financeData.latestEvent().cash
+            newCash = financeData.latestState().cash
             assert newCash == pytest.approx(previousCash + 50)
             previousCash = newCash
 
@@ -55,7 +55,7 @@ def testSalariedIncomeBiAnnual():
     previousCash = financeData.data[0].cash
     for year in range(2000, 2009, 2):
         financeData.passEvent(date(year, 1, 1), relativedelta(years=2))
-        newCash = financeData.latestEvent().cash
+        newCash = financeData.latestState().cash
         assert newCash == pytest.approx(previousCash + 200)
         previousCash = newCash
 
@@ -65,6 +65,6 @@ def testSalariedIncomeZero():
     financeData.setEventComponents(events)
     for month in range(1, 13):
         financeData.passEvent(date(2000, month, 1), relativedelta(months=1))
-        newCash = financeData.latestEvent().cash
+        newCash = financeData.latestState().cash
         assert newCash == 0
 
