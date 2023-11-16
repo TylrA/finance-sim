@@ -100,7 +100,7 @@ class FinanceHistory(object):
     def appendEvent(self, event: FinanceState):
         self.data.append(event)
 
-    def latestEvent(self):
+    def latestState(self):
         return self.data[-1]
 
 FinanceEvent = Callable[[FinanceHistory, FinanceState, date, relativedelta], FinanceState]
