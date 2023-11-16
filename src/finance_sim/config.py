@@ -31,6 +31,7 @@ class ScheduledState(object):
     state: StateConfig
     startDate: date
     endDate: date
+    active: bool
 
 @dataclass
 class ScenarioConfig(object):
@@ -107,7 +108,8 @@ def _parseScheduledStateUpdates(rawScheduledUpdates) -> list[ScheduledState]:
         endDate = scheduledUpdate['schedule']['endDate']
         result.append(ScheduledState(startDate=startDate,
                                      endDate=endDate,
-                                     state=_parseState(scheduledUpdate['value'])))
+                                     state=_parseState(scheduledUpdate['value']),
+                                     active=False))
     return result
 
 def parseConfig(path: str) -> ScenarioConfig:
