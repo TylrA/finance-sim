@@ -45,6 +45,24 @@ def _nextDate(eventDate: date, accrualModel: AccrualModel) -> Tuple[date, relati
         return eventDate + delta, delta
     return date(2000, 1, 1), relativedelta(months=0)
 
+def _synchronizeUpdates(config: ScenarioConfig, eventDate: date, history: finSim.FinanceHistory):
+    for scheduledEvent in config.scheduledValues:
+        if eventDate >= scheduledEvent.startDate:
+            if eventDate < scheduledEvent.endDate and not scheduledEvent.active:
+                scheduledState = scheduledEvent.state
+                if scheduledState.type == StateType.cash:
+                    latestState = history.latestState()
+                    latestState.cash += scheduledState.data['value']
+                    history.data[-1] = latestState
+                elif scheduledState.type == StateType.constantGrowthAsset:
+                    latestState = history.latestState()
+                    constantGrowthAsset = finSim.ConstantGrowthAsset(
+                        accrualModel=config.time.accrualModel,
+                        initialValue=scheduledState.data['value'],
+                        annualAppreciation=scheduledState.data['appreciation'])
+                    latestState.constantGrowthAssets.append(constantGrowthAsset)
+                scheduledEvent.active = True
+
 def _simulate(config: ScenarioConfig, history: finSim.FinanceHistory):
     accrualModel = config.time.accrualModel
     eventDate, delta = _nextDate(config.time.startingDate, accrualModel)
