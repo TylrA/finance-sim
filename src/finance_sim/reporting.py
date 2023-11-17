@@ -62,6 +62,22 @@ def _synchronizeUpdates(config: ScenarioConfig, eventDate: date, history: finSim
                         annualAppreciation=scheduledState.data['appreciation'])
                     latestState.constantGrowthAssets.append(constantGrowthAsset)
                 scheduledEvent.active = True
+            elif eventDate >= scheduledEvent.endDate and scheduledEvent.active:
+                scheduledState = scheduledEvent.state
+                if scheduledState.type == StateType.cash:
+                    delta = relativedelta(years=config.time.period)
+                    eventEndDate = config.time.startingDate + delta
+                    raise RuntimeError("scheduled cash events should not end before the " +
+                                       "period ends.\nEvent date: {}\n".format(eventDate) +
+                                       "Period end date: {}".format(eventEndDate))
+                elif scheduledState.type == StateType.constantGrowthAsset:
+                    delta = relativedelta(years=config.time.period)
+                    eventEndDate = config.time.startingDate + delta
+                    raise RuntimeError("scheduled events of the type constant growth " +
+                                       "asset should not end before the period ends.\n" +
+                                       "Event date: {}\n".format(eventDate) +
+                                       "Period end date: {}".format(eventEndDate))
+                scheduledEvent.active = False
 
 def _simulate(config: ScenarioConfig, history: finSim.FinanceHistory):
     accrualModel = config.time.accrualModel
