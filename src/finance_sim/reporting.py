@@ -1,4 +1,6 @@
 from typing import Tuple
+
+import numpy as np
 from finance_sim.config import ScenarioConfig, StateType
 import finance_sim.main as finSim
 
@@ -45,7 +47,9 @@ def _nextDate(eventDate: date, accrualModel: AccrualModel) -> Tuple[date, relati
         return eventDate + delta, delta
     return date(2000, 1, 1), relativedelta(months=0)
 
-def _synchronizeUpdates(config: ScenarioConfig, eventDate: date, history: finSim.FinanceHistory):
+def _synchronizeUpdates(config: ScenarioConfig,
+                        eventDate: date,
+                        history: finSim.FinanceHistory):
     for scheduledEvent in config.scheduledValues:
         if eventDate >= scheduledEvent.startDate:
             if eventDate < scheduledEvent.endDate and not scheduledEvent.active:
@@ -84,10 +88,16 @@ def _simulate(config: ScenarioConfig, history: finSim.FinanceHistory):
     eventDate, delta = _nextDate(config.time.startingDate, accrualModel)
     while eventDate < (config.time.startingDate + relativedelta(years=config.time.period)):
         history.passEvent(eventDate, delta)
+        _synchronizeUpdates(config, eventDate, history)
         eventDate, delta = _nextDate(eventDate, accrualModel)
+
+def _stateToRow(state: finSim.FinanceState) -> list:
+    result = [state.date, state.cash, *state.constantGrowthAssets]
+    result.extend([value for _, value in state.amortizingLoans.items()])
+    return result
 
 def report(config: ScenarioConfig) -> DataFrame:
     initialState = _assembleInitialState(config)
     history = finSim.FinanceHistory(initialState)
     _simulate(config, history)
-    return DataFrame()
+    return DataFrame([_stateToRow(d) for d in history.data])
