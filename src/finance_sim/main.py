@@ -28,6 +28,9 @@ class ConstantGrowthAsset(object):
         value = self.value * pow(1 + self.appreciation, portion)
         return ConstantGrowthAsset(self.accrualModel, value, self.appreciation)
 
+    def __str__(self) -> str:
+        return str(self.value)
+
 class AmortizingLoan(object):
     name: str
     accrualModel: AccrualModel
