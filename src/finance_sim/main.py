@@ -86,6 +86,7 @@ class FinanceState(object):
 class FinanceHistory(object):
     def __init__(self, event: FinanceState):
         self.data: list[FinanceState] = [event]
+        self.events: list[FinanceEvent] = []
 
     def setEventComponents(self, events: list[FinanceEvent]):
         self.events = events
@@ -189,6 +190,19 @@ def taxPaymentSchedule(frequency: relativedelta,
         return result
 
     return payTaxes
+
+def balanceComponents(history: FinanceHistory) -> list[FinanceEvent]:
+    if history.events:
+        raise RuntimeError('balanceComponents should only be called on FinanceHistory objects that have no events')
+    
+    latestState = history.latestState()
+    components: list[FinanceEvent] = []
+    
+    if latestState.amortizingLoans:
+        components.append(makeAmortizedPayments)
+    if latestState.constantGrowthAssets:
+        components.append(appreciateConstantAssets)
+    return components
 
 if __name__ == '__main__':
     if len(sys.argv) <= 2:
