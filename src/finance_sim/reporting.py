@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import numpy as np
-from finance_sim.config import ScenarioConfig, StateType
+from finance_sim.config import ScenarioConfig, StateType, parseConfig
 import finance_sim.main as finSim
 
 from calendar import monthrange
@@ -99,5 +99,10 @@ def _stateToRow(state: finSim.FinanceState) -> list:
 def report(config: ScenarioConfig) -> DataFrame:
     initialState = _assembleInitialState(config)
     history = finSim.FinanceHistory(initialState)
+    # history.setEventComponents(finSim.balanceComponents(history))
     _simulate(config, history)
     return DataFrame([_stateToRow(d) for d in history.data])
+
+if __name__ == '__main__':
+    config = parseConfig('../../examples/finance-config.yaml')
+    print(report(config).to_csv())
