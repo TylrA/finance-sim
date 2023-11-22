@@ -65,7 +65,17 @@ class AmortizingLoan(object):
                                 self.term,
                                 self.payment)
         return result
-        
+
+class FinancePlaceholder(object):
+    '''
+    "FinanceEvent" is a good name, but that's already taken. This should deprecate/rebase
+    a lot of FinanceState and FinanceEvent. They can keep their names in the meantime.
+    '''
+    def __init__(self, name):
+        self.name = name
+
+    def passEvent(self, history: FinanceHistory):
+        raise NotImplementedError()
 
 class FinanceState(object):
     def __init__(self, date: date = date.today()):
