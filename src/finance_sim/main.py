@@ -2,6 +2,7 @@ from __future__ import annotations
 from ctypes import ArgumentError
 
 import sys
+import abc
 
 from dataclasses import dataclass
 from datetime import date
@@ -66,7 +67,7 @@ class AmortizingLoan(object):
                                 self.payment)
         return result
 
-class FinancePlaceholder(object):
+class AbstractEvent(object):
     '''
     "FinanceEvent" is a good name, but that's already taken. This should deprecate/rebase
     a lot of FinanceState and FinanceEvent. They can keep their names in the meantime.
@@ -74,7 +75,11 @@ class FinancePlaceholder(object):
     def __init__(self, name):
         self.name = name
 
-    def passEvent(self, history: FinanceHistory):
+    @abc.abstractmethod
+    def passEvent(self,
+                  history: FinanceHistory,
+                  date: date,
+                  delta: relativedelta) -> AbstractEvent:
         raise NotImplementedError()
 
 class FinanceState(object):
