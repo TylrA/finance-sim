@@ -12,22 +12,53 @@ from typing import Callable
 
 from .scheduling import AccrualModel, portionOfYear
 
-class ConstantGrowthAsset(object):
+class AbstractEvent(abc.ABC):
+    '''
+    "FinanceEvent" is a good name, but that's already taken. This should deprecate/rebase
+    a lot of FinanceState and FinanceEvent. They can keep their names in the meantime.
+    '''
+    name: str
+    
+    @abc.abstractmethod
+    def passEvent(self,
+                  history: FinanceHistory,
+                  date: date,
+                  delta: relativedelta) -> AbstractEvent:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def copy(self) -> AbstractEvent:
+        raise NotImplementedError()
+
+class ConstantGrowthAsset(AbstractEvent):
     '''
     "Constant" really means constant exponential rate
     '''
     value: float
     appreciation: float
     
-    def __init__(self, accrualModel: AccrualModel, initialValue: float = 0, annualAppreciation: float = 0):
+    def __init__(self, name: str, accrualModel: AccrualModel, initialValue: float = 0, annualAppreciation: float = 0):
+        self.name = name
         self.value = initialValue
         self.appreciation = annualAppreciation
         self.accrualModel = accrualModel
 
-    def appreciate(self, date: date, period: relativedelta) -> ConstantGrowthAsset:
-        portion = portionOfYear(date, period, self.accrualModel)
+    def passEvent(self,
+                  history: FinanceHistory,
+                  date: date,
+                  delta: relativedelta) -> ConstantGrowthAsset:
+        portion = portionOfYear(date, delta, self.accrualModel)
         value = self.value * pow(1 + self.appreciation, portion)
-        return ConstantGrowthAsset(self.accrualModel, value, self.appreciation)
+        return ConstantGrowthAsset(self.name, self.accrualModel, value, self.appreciation)
+
+    # def appreciate(self, date: date, period: relativedelta) -> ConstantGrowthAsset:
+    #     portion = portionOfYear(date, period, self.accrualModel)
+    #     value = self.value * pow(1 + self.appreciation, portion)
+    #     return ConstantGrowthAsset(self.name, self.accrualModel, value, self.appreciation)
+
+    def copy(self) -> ConstantGrowthAsset:
+        result = ConstantGrowthAsset(self.name, self.accrualModel, self.value, self.appreciation)
+        return result
 
     def __str__(self) -> str:
         return str(self.value)
@@ -66,21 +97,6 @@ class AmortizingLoan(object):
                                 self.term,
                                 self.payment)
         return result
-
-class AbstractEvent(object):
-    '''
-    "FinanceEvent" is a good name, but that's already taken. This should deprecate/rebase
-    a lot of FinanceState and FinanceEvent. They can keep their names in the meantime.
-    '''
-    def __init__(self, name):
-        self.name = name
-
-    @abc.abstractmethod
-    def passEvent(self,
-                  history: FinanceHistory,
-                  date: date,
-                  delta: relativedelta) -> AbstractEvent:
-        raise NotImplementedError()
 
 class FinanceState(object):
     def __init__(self, date: date = date.today()):
