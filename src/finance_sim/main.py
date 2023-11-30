@@ -38,6 +38,21 @@ class AbstractEvent(abc.ABC):
     def copy(self) -> AbstractEvent:
         raise NotImplementedError()
 
+class CashEvent(AbstractEvent):
+    def __init__(self, name: str, value: float):
+        self.name = name
+        self.value = value
+        self.eventType = self.EventType.Cash
+
+    def passEvent(self,
+                  history: FinanceHistory,
+                  date: date,
+                  delta: relativedelta) -> CashEvent:
+        return self.copy()
+
+    def copy(self):
+        return CashEvent(self.name, self.value)
+
 class ConstantGrowthAsset(AbstractEvent):
     '''
     "Constant" really means constant exponential rate
