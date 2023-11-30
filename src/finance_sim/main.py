@@ -7,6 +7,7 @@ import abc
 from dataclasses import dataclass
 from datetime import date
 from dateutil.relativedelta import relativedelta
+from enum import Enum
 from math import pow
 from typing import Callable
 
@@ -17,8 +18,15 @@ class AbstractEvent(abc.ABC):
     "FinanceEvent" is a good name, but that's already taken. This should deprecate/rebase
     a lot of FinanceState and FinanceEvent. They can keep their names in the meantime.
     '''
-    name: str
+    class EventType(Enum):
+        Undefined = 0
+        Cash = 1
+        ConstantGrowthAsset = 2
+        AmortizingLoan = 3
     
+    name: str
+    eventType: EventType = EventType.Undefined
+
     @abc.abstractmethod
     def passEvent(self,
                   history: FinanceHistory,
@@ -42,6 +50,7 @@ class ConstantGrowthAsset(AbstractEvent):
         self.value = initialValue
         self.appreciation = annualAppreciation
         self.accrualModel = accrualModel
+        self.eventType = self.EventType.ConstantGrowthAsset
 
     def passEvent(self,
                   history: FinanceHistory,
