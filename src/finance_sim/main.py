@@ -97,8 +97,21 @@ class ConstantGrowthAsset(AbstractEvent):
     def __str__(self) -> str:
         return str(self.value)
 
-class AmortizingLoan(object):
-    name: str
+def subtractFromCash(events: EventGroup, cashToSubtract: float) -> EventGroup:
+    result = events.copy()
+    for _, event in result.events.items():
+        if isinstance(event, CashEvent):
+            if event.value >= cashToSubtract:
+                event.value -= cashToSubtract
+                cashToSubtract = 0
+            elif event.value > 0:
+                cashToSubtract -= event.value
+                event.value = 0
+    if cashToSubtract > 0:
+        raise RuntimeError("not enough money to subtract")
+    return result
+
+class AmortizingLoan(AbstractEvent):
     accrualModel: AccrualModel
     principle: float
     loanAmount: float
@@ -121,6 +134,24 @@ class AmortizingLoan(object):
         self.rate = rate
         self.term = remainingTermInYears
         self.payment = payment
+
+    def passEvent(self,
+                  history: FinanceHistory,
+                  date: date,
+                  period: relativedelta) -> AmortizingLoan:
+        result = self.copy()
+        # for name, amortizingLoan in result.amortizingLoans.items():
+        yearFraction = portionOfYear(date, period, self.accrualModel)
+        adjustedRate = pow(1 + result.rate, yearFraction) - 1
+        interestPaid = (result.loanAmount - result.principle) * adjustedRate
+        if result.payment < 0:
+            denominator = 1 - pow(1 + adjustedRate, -(result.term / yearFraction))
+            paymentAmount = interestPaid / denominator
+            result.payment = paymentAmount
+        result.principle += result.payment - interestPaid
+        result.term -= yearFraction
+        subtractFromCash(history.pendingEvent, result.payment)
+        return result
 
     def copy(self):
         result = AmortizingLoan(self.name,
