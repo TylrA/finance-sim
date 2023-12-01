@@ -38,6 +38,16 @@ class AbstractEvent(abc.ABC):
     def copy(self) -> AbstractEvent:
         raise NotImplementedError()
 
+class EventGroup(object):
+    date: date
+    events: dict[str, AbstractEvent]
+
+    def copy(self):
+        result = EventGroup()
+        result.date = self.date
+        result.events = { name: event.copy() for name, event in self.events.items() }
+        return result
+
 class CashEvent(AbstractEvent):
     def __init__(self, name: str, value: float):
         self.name = name
@@ -142,14 +152,18 @@ class FinanceState(object):
         return result
 
 class FinanceHistory(object):
+    pendingEvent: EventGroup
+    
     def __init__(self, event: FinanceState):
-        self.data: list[FinanceState] = [event]
+        self.data: list[EventGroup] = [event]
         self.events: list[FinanceEvent] = []
 
     def setEventComponents(self, events: list[FinanceEvent]):
         self.events = events
 
     def passEvent(self, date: date, period: relativedelta):
+        self.pendingEvent = self.data[-1].copy()
+        # todo: increment date of pendingEvent
         newState = self.data[-1].copy()
         newState.date = date
         for event in self.events:
