@@ -85,11 +85,6 @@ class ConstantGrowthAsset(AbstractEvent):
         value = self.value * pow(1 + self.appreciation, portion)
         return ConstantGrowthAsset(self.name, self.accrualModel, value, self.appreciation)
 
-    # def appreciate(self, date: date, period: relativedelta) -> ConstantGrowthAsset:
-    #     portion = portionOfYear(date, period, self.accrualModel)
-    #     value = self.value * pow(1 + self.appreciation, portion)
-    #     return ConstantGrowthAsset(self.name, self.accrualModel, value, self.appreciation)
-
     def copy(self) -> ConstantGrowthAsset:
         result = ConstantGrowthAsset(self.name, self.accrualModel, self.value, self.appreciation)
         return result
@@ -185,7 +180,7 @@ class FinanceState(object):
 class FinanceHistory(object):
     pendingEvent: EventGroup
     
-    def __init__(self, event: FinanceState):
+    def __init__(self, event: EventGroup):
         self.data: list[EventGroup] = [event]
         self.events: list[FinanceEvent] = []
 
@@ -194,15 +189,13 @@ class FinanceHistory(object):
 
     def passEvent(self, date: date, period: relativedelta):
         self.pendingEvent = self.data[-1].copy()
-        # todo: increment date of pendingEvent
-        newState = self.data[-1].copy()
-        newState.date = date
-        for event in self.events:
-            newState = event(self, newState, date, period)
-        self.data.append(newState)
+        self.pendingEvent.date = date
+        for name in self.pendingEvent.events:
+            self.pendingEvent.events[name] = self.pendingEvent.events[name].passEvent(self, date, period)
+        self.data.append(self.pendingEvent)
     
-    def appendEvent(self, event: FinanceState):
-        self.data.append(event)
+    def appendEvent(self, events: EventGroup):
+        self.data.append(events)
 
     def latestState(self):
         return self.data[-1]
