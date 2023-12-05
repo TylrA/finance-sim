@@ -92,18 +92,26 @@ class ConstantGrowthAsset(AbstractEvent):
     def __str__(self) -> str:
         return str(self.value)
 
-def subtractFromCash(events: EventGroup, cashToSubtract: float) -> EventGroup:
+def addToCash(events: EventGroup, difference: float) -> EventGroup:
     result = events.copy()
-    for _, event in result.events.items():
-        if isinstance(event, CashEvent):
-            if event.value >= cashToSubtract:
-                event.value -= cashToSubtract
-                cashToSubtract = 0
-            elif event.value > 0:
-                cashToSubtract -= event.value
-                event.value = 0
-    if cashToSubtract > 0:
-        raise RuntimeError("not enough money to subtract")
+    if difference < 0:
+        for _, event in result.events.items():
+            if isinstance(event, CashEvent):
+                if event.value >= difference:
+                    event.value -= difference
+                    difference = 0
+                elif event.value > 0:
+                    difference -= event.value
+                    event.value = 0
+        if difference > 0:
+            raise RuntimeError("not enough money to subtract")
+    else:
+        for _, event in result.events.items():
+            if difference > -0.0001 and difference < 0.0001:
+                break
+            if isinstance(event, CashEvent):
+                event.value += difference
+                difference = 0
     return result
 
 class AmortizingLoan(AbstractEvent):
@@ -145,7 +153,7 @@ class AmortizingLoan(AbstractEvent):
             result.payment = paymentAmount
         result.principle += result.payment - interestPaid
         result.term -= yearFraction
-        subtractFromCash(history.pendingEvent, result.payment)
+        addToCash(history.pendingEvent, -result.payment)
         return result
 
     def copy(self):
@@ -157,6 +165,25 @@ class AmortizingLoan(AbstractEvent):
                                 self.term,
                                 self.payment)
         return result
+
+class ConstantSalariedIncome(AbstractEvent):
+    salary: float
+    accrualModel: AccrualModel
+    def __init__(self, name: str, salary: float, accrualModel: AccrualModel):
+        self.name = name
+        self.salary = salary
+        self.accrualModel = accrualModel
+
+    def passEvent(self,
+                  history: FinanceHistory,
+                  date: date,
+                  period: relativedelta) -> ConstantSalariedIncome:
+        portion = portionOfYear(date, period, self.accrualModel)
+        addToCash(history.pendingEvent, portion * self.salary)
+        return self
+
+    def copy(self):
+        return ConstantSalariedIncome(self.name, self.salary, self.accrualModel)
 
 class FinanceState(object):
     def __init__(self, date: date = date.today()):
@@ -184,8 +211,8 @@ class FinanceHistory(object):
         self.data: list[EventGroup] = [event]
         self.events: list[FinanceEvent] = []
 
-    def setEventComponents(self, events: list[FinanceEvent]):
-        self.events = events
+    # def setEventComponents(self, events: list[FinanceEvent]):
+    #     self.events = events
 
     def passEvent(self, date: date, period: relativedelta):
         self.pendingEvent = self.data[-1].copy()
