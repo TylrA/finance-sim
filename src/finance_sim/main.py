@@ -202,8 +202,8 @@ class FinanceHistory(object):
     def passEvent(self, date: date, period: relativedelta):
         self.pendingEvent = self.data[-1].copy()
         self.pendingEvent.date = date
-        for name in self.pendingEvent.events:
-            self.pendingEvent.events[name] = self.pendingEvent.events[name].transform(self, date, period)
+        for _, event in self.pendingEvent.events.items():
+            event.transform(self, date, period)
         self.data.append(self.pendingEvent)
     
     def appendEvent(self, events: EventGroup):
