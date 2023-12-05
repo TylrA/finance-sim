@@ -28,10 +28,10 @@ class AbstractEvent(abc.ABC):
     eventType: EventType = EventType.Undefined
 
     @abc.abstractmethod
-    def passEvent(self,
+    def transform(self,
                   history: FinanceHistory,
                   date: date,
-                  delta: relativedelta) -> AbstractEvent:
+                  delta: relativedelta) -> None:
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -54,11 +54,11 @@ class CashEvent(AbstractEvent):
         self.value = value
         self.eventType = self.EventType.Cash
 
-    def passEvent(self,
+    def transform(self,
                   history: FinanceHistory,
                   date: date,
-                  delta: relativedelta) -> CashEvent:
-        return self.copy()
+                  delta: relativedelta):
+        pass
 
     def copy(self):
         return CashEvent(self.name, self.value)
@@ -77,13 +77,12 @@ class ConstantGrowthAsset(AbstractEvent):
         self.accrualModel = accrualModel
         self.eventType = self.EventType.ConstantGrowthAsset
 
-    def passEvent(self,
+    def transform(self,
                   history: FinanceHistory,
                   date: date,
-                  delta: relativedelta) -> ConstantGrowthAsset:
+                  delta: relativedelta):
         portion = portionOfYear(date, delta, self.accrualModel)
-        value = self.value * pow(1 + self.appreciation, portion)
-        return ConstantGrowthAsset(self.name, self.accrualModel, value, self.appreciation)
+        self.value *= pow(1 + self.appreciation, portion)
 
     def copy(self) -> ConstantGrowthAsset:
         result = ConstantGrowthAsset(self.name, self.accrualModel, self.value, self.appreciation)
@@ -138,23 +137,20 @@ class AmortizingLoan(AbstractEvent):
         self.term = remainingTermInYears
         self.payment = payment
 
-    def passEvent(self,
+    def transform(self,
                   history: FinanceHistory,
                   date: date,
-                  period: relativedelta) -> AmortizingLoan:
-        result = self.copy()
-        # for name, amortizingLoan in result.amortizingLoans.items():
+                  period: relativedelta) -> None:
         yearFraction = portionOfYear(date, period, self.accrualModel)
-        adjustedRate = pow(1 + result.rate, yearFraction) - 1
-        interestPaid = (result.loanAmount - result.principle) * adjustedRate
-        if result.payment < 0:
-            denominator = 1 - pow(1 + adjustedRate, -(result.term / yearFraction))
+        adjustedRate = pow(1 + self.rate, yearFraction) - 1
+        interestPaid = (self.loanAmount - self.principle) * adjustedRate
+        if self.payment < 0:
+            denominator = 1 - pow(1 + adjustedRate, -(self.term / yearFraction))
             paymentAmount = interestPaid / denominator
-            result.payment = paymentAmount
-        result.principle += result.payment - interestPaid
-        result.term -= yearFraction
-        addToCash(history.pendingEvent, -result.payment)
-        return result
+            self.payment = paymentAmount
+        self.principle += self.payment - interestPaid
+        self.term -= yearFraction
+        addToCash(history.pendingEvent, -self.payment)
 
     def copy(self):
         result = AmortizingLoan(self.name,
@@ -174,13 +170,12 @@ class ConstantSalariedIncome(AbstractEvent):
         self.salary = salary
         self.accrualModel = accrualModel
 
-    def passEvent(self,
+    def transform(self,
                   history: FinanceHistory,
                   date: date,
-                  period: relativedelta) -> ConstantSalariedIncome:
+                  period: relativedelta):
         portion = portionOfYear(date, period, self.accrualModel)
         addToCash(history.pendingEvent, portion * self.salary)
-        return self
 
     def copy(self):
         return ConstantSalariedIncome(self.name, self.salary, self.accrualModel)
@@ -218,7 +213,7 @@ class FinanceHistory(object):
         self.pendingEvent = self.data[-1].copy()
         self.pendingEvent.date = date
         for name in self.pendingEvent.events:
-            self.pendingEvent.events[name] = self.pendingEvent.events[name].passEvent(self, date, period)
+            self.pendingEvent.events[name] = self.pendingEvent.events[name].transform(self, date, period)
         self.data.append(self.pendingEvent)
     
     def appendEvent(self, events: EventGroup):
