@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from math import pow
-from typing import Callable
+from typing import Callable, Optional
 
 from .scheduling import AccrualModel, portionOfYear
 
@@ -41,6 +41,7 @@ class EventGroup(object):
         return result
 
 class CashEvent(AbstractEvent):
+    value: float
     def __init__(self, name: str, value: float):
         self.name = name
         self.value = value
@@ -54,6 +55,53 @@ class CashEvent(AbstractEvent):
     def copy(self):
         return CashEvent(self.name, self.value)
 
+@dataclass
+class TaxBracket(object):
+    rate: float
+    income: float
+
+class TaxPaymentEvent(AbstractEvent):
+    frequency: relativedelta
+    accrualModel: AccrualModel
+    brackets: list[TaxBracket]
+    taxableIncome: float
+    taxesPaid: float
+    
+    def __init__(self,
+                 name: str,
+                 frequency: relativedelta,
+                 accrualModel: AccrualModel,
+                 brackets: list[TaxBracket]):
+        self.name = name
+        self.frequency = frequency
+        self.accrualModel = accrualModel
+        self.brackets = brackets
+        self.taxableIncome = 0
+        self.taxesPaid = 0
+
+    def transform(self, history: FinanceHistory, date: date, delta: relativedelta):
+        if (date - delta) <= (date - self.frequency):
+            taxDue = 0
+            for bracket in self.brackets[::-1]:
+                adjustedIncomeThreshold = bracket.income * \
+                    portionOfYear(date, delta, self.accrualModel)
+                if self.taxableIncome > adjustedIncomeThreshold:
+                    marginAboveBracket = self.taxableIncome - adjustedIncomeThreshold
+                    taxDue += bracket.rate * marginAboveBracket
+                    self.taxableIncome -= marginAboveBracket
+            addToCash(history.pendingEvent, -taxDue)
+            self.taxesPaid += taxDue
+                
+
+    def copy(self):
+        result = TaxPaymentEvent(self.name,
+                                 self.frequency,
+                                 self.accrualModel,
+                                 self.brackets)
+        result.taxableIncome = self.taxableIncome
+        result.taxesPaid = self.taxesPaid
+        return result
+
 class ConstantGrowthAsset(AbstractEvent):
     '''
     "Constant" really means constant exponential rate
@@ -61,7 +109,11 @@ class ConstantGrowthAsset(AbstractEvent):
     value: float
     appreciation: float
     
-    def __init__(self, name: str, accrualModel: AccrualModel, initialValue: float = 0, annualAppreciation: float = 0):
+    def __init__(self,
+                 name: str,
+                 accrualModel: AccrualModel,
+                 initialValue: float = 0,
+                 annualAppreciation: float = 0):
         self.name = name
         self.value = initialValue
         self.appreciation = annualAppreciation
@@ -81,7 +133,9 @@ class ConstantGrowthAsset(AbstractEvent):
     def __str__(self) -> str:
         return str(self.value)
 
-def addToCash(events: EventGroup, difference: float) -> EventGroup:
+def addToCash(events: EventGroup,
+              difference: float,
+              taxable: bool = True) -> EventGroup:
     result = events.copy()
     if difference < 0:
         for _, event in result.events.items():
@@ -95,12 +149,21 @@ def addToCash(events: EventGroup, difference: float) -> EventGroup:
         if difference > 0:
             raise RuntimeError("not enough money to subtract")
     else:
+        cashEvent: Optional[CashEvent] = None
+        taxPaymentEvent: Optional[TaxPaymentEvent] = None
         for _, event in result.events.items():
-            if difference > -0.0001 and difference < 0.0001:
-                break
             if isinstance(event, CashEvent):
-                event.value += difference
-                difference = 0
+                cashEvent = event
+                if taxPaymentEvent:
+                    break
+            elif isinstance(event, TaxPaymentEvent):
+                taxPaymentEvent = event
+                if cashEvent:
+                    break
+        if cashEvent:
+            cashEvent.value += difference
+        if taxable and taxPaymentEvent:
+            taxPaymentEvent.taxableIncome += difference
     return result
 
 class AmortizingLoan(AbstractEvent):
@@ -264,40 +327,6 @@ def makeAmortizedPayments(history: FinanceHistory,
         result.cash -= newLoan.payment
         result.amortizingLoans[name] = newLoan
     return result
-
-@dataclass
-class TaxBracket(object):
-    rate: float
-    income: float
-
-def taxPaymentSchedule(frequency: relativedelta,
-                       accrualModel: AccrualModel,
-                       brackets: list[TaxBracket]) -> FinanceEvent:
-    if len(brackets) < 1:
-        raise ArgumentError('there must be at least one tax bracket')
-    if brackets[0].income != 0.0:
-        raise ArgumentError('brackets must start with a zero income bracket')
-
-    def payTaxes(history: FinanceHistory,
-                 state: FinanceState,
-                 date: date,
-                 period: relativedelta) -> FinanceState:
-        result = state.copy()
-        if (date - period) <= (date - frequency):
-            taxDue = 0
-            for bracket in brackets[::-1]:
-                adjustedIncomeThreshold = bracket.income * portionOfYear(date,
-                                                                         period,
-                                                                         accrualModel)
-                if result.taxableIncome > adjustedIncomeThreshold:
-                    marginAboveBracket = result.taxableIncome - adjustedIncomeThreshold
-                    taxDue += bracket.rate * marginAboveBracket
-                    result.taxableIncome -= marginAboveBracket
-            result.cash -= taxDue
-            result.taxesPaid += taxDue
-        return result
-
-    return payTaxes
 
 def balanceComponents(history: FinanceHistory) -> list[FinanceEvent]:
     if history.events:
