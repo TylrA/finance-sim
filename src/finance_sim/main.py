@@ -232,6 +232,24 @@ class ConstantSalariedIncome(AbstractEvent):
     def copy(self):
         return ConstantSalariedIncome(self.name, self.salary, self.accrualModel)
 
+class ConstantExpense(AbstractEvent):
+    yearlyExpense: float
+    accrualModel: AccrualModel
+    def __init__(self, name: str, yearlyExpense: float, accrualModel: AccrualModel):
+        self.name = name
+        self.yearlyExpense = yearlyExpense
+        self.accrualModel = accrualModel
+
+    def transform(self,
+                  history: FinanceHistory,
+                  date: date,
+                  period: relativedelta):
+        portion = portionOfYear(date, period, self.accrualModel)
+        addToCash(history.pendingEvent, -portion * self.yearlyExpense)
+
+    def copy(self):
+        return ConstantExpense(self.name, self.yearlyExpense, self.accrualModel)
+
 class FinanceState(object):
     def __init__(self, date: date = date.today()):
         self.date = date
