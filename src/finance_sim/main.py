@@ -33,12 +33,12 @@ class AbstractEvent(abc.ABC):
 class EventGroup(object):
     date: date
     events: dict[str, AbstractEvent]
+    def __init__(self, date: date, events: dict[str, AbstractEvent]):
+        self.date = date
+        self.events = events
 
     def copy(self):
-        result = EventGroup()
-        result.date = self.date
-        result.events = { name: event.copy() for name, event in self.events.items() }
-        return result
+        return EventGroup(self.date, self.events)
 
 class CashEvent(AbstractEvent):
     value: float
@@ -259,9 +259,6 @@ class FinanceHistory(object):
         self.data: list[EventGroup] = [event]
         self.events: list[FinanceEvent] = []
 
-    # def setEventComponents(self, events: list[FinanceEvent]):
-    #     self.events = events
-
     def passEvent(self, date: date, period: relativedelta):
         self.pendingEvent = self.data[-1].copy()
         self.pendingEvent.date = date
@@ -272,7 +269,7 @@ class FinanceHistory(object):
     def appendEvent(self, events: EventGroup):
         self.data.append(events)
 
-    def latestState(self):
+    def latestEvents(self):
         return self.data[-1]
 
 FinanceEvent = Callable[[FinanceHistory, FinanceState, date, relativedelta], FinanceState]
