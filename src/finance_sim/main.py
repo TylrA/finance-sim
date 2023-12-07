@@ -38,7 +38,8 @@ class EventGroup(object):
         self.events = events
 
     def copy(self):
-        return EventGroup(self.date, self.events)
+        return EventGroup(self.date,
+                          { name: event.copy() for name, event in self.events.items() })
 
 class CashEvent(AbstractEvent):
     value: float
