@@ -135,23 +135,22 @@ class ConstantGrowthAsset(AbstractEvent):
 
 def addToCash(events: EventGroup,
               difference: float,
-              taxable: bool = True) -> EventGroup:
-    result = events.copy()
+              taxable: bool = True) -> None:
     if difference < 0:
-        for _, event in result.events.items():
+        for _, event in events.events.items():
             if isinstance(event, CashEvent):
-                if event.value >= difference:
-                    event.value -= difference
+                if event.value >= -difference:
+                    event.value += difference
                     difference = 0
                 elif event.value > 0:
-                    difference -= event.value
+                    difference += event.value
                     event.value = 0
         if difference > 0:
             raise RuntimeError("not enough money to subtract")
     else:
         cashEvent: Optional[CashEvent] = None
         taxPaymentEvent: Optional[TaxPaymentEvent] = None
-        for _, event in result.events.items():
+        for _, event in events.events.items():
             if isinstance(event, CashEvent):
                 cashEvent = event
                 if taxPaymentEvent:
@@ -164,7 +163,6 @@ def addToCash(events: EventGroup,
             cashEvent.value += difference
         if taxable and taxPaymentEvent:
             taxPaymentEvent.taxableIncome += difference
-    return result
 
 class AmortizingLoan(AbstractEvent):
     accrualModel: AccrualModel
