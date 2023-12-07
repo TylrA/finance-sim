@@ -5,22 +5,28 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 def testSalariedIncomeMonthly():
-    financeData = FinanceHistory(FinanceState(date(2000, 1, 1)))
-    events = [constantSalariedIncome(120, AccrualModel.PeriodicMonthly)]
-    financeData.setEventComponents(events)
-    previousCash = financeData.data[0].cash
+    eventGroup = EventGroup(date(2000, 1, 1),
+                            { 'i': ConstantSalariedIncome('i',
+                                                          120,
+                                                          AccrualModel.PeriodicMonthly),
+                              'cash': CashEvent('cash', 0) })
+    financeData = FinanceHistory(eventGroup)
+    previousCash = financeData.latestEvents().events['cash'].value
     delta = relativedelta(months=1)
     for month in range(2, 100):
         financeData.passEvent(date(2000 + (month) // 12, ((month - 1) % 12) + 1, 1), delta)
-        newCash = financeData.latestState().cash
+        newCash = financeData.latestEvents().events['cash'].value
         assert newCash == pytest.approx(previousCash + 10)
         previousCash = newCash
     
 def testSalariedIncomeSemiMonthly():
-    financeData = FinanceHistory(FinanceState(date(2000, 1, 15)))
-    events: list[FinanceEvent] = [constantSalariedIncome(120, AccrualModel.PeriodicSemiMonthly)]
-    financeData.setEventComponents(events)
-    previousCash = financeData.data[0].cash
+    eventGroup = EventGroup(date(2000, 1, 15),
+                            { 'i': ConstantSalariedIncome('i',
+                                                          120,
+                                                          AccrualModel.PeriodicSemiMonthly),
+                              'cash': CashEvent('cash', 0) })
+    financeData = FinanceHistory(eventGroup)
+    previousCash = financeData.latestEvents().events['cash'].value
     delta = relativedelta(months=1)
     for idx in range(1, 100):
         month = (idx // 2) % 12 + 1
@@ -32,39 +38,48 @@ def testSalariedIncomeSemiMonthly():
         else:
             delta = relativedelta(days = 15)
         financeData.passEvent(adjustedDate, delta)
-        newCash = financeData.latestState().cash
+        newCash = financeData.latestEvents().events['cash'].value
         assert newCash == pytest.approx(previousCash + 5)
         previousCash = newCash
     
 def testSalariedIncomeSemiAnnual():
-    financeData = FinanceHistory(FinanceState(date(1999, 6, 1)))
-    events: list[FinanceEvent] = [constantSalariedIncome(100, AccrualModel.PeriodicMonthly)]
-    financeData.setEventComponents(events)
-    previousCash = financeData.data[0].cash
+    eventGroup = EventGroup(date(1999, 6, 1),
+                            { 'i': ConstantSalariedIncome('i',
+                                                          100,
+                                                          AccrualModel.PeriodicMonthly),
+                              'cash': CashEvent('cash', 0) })
+    financeData = FinanceHistory(eventGroup)
+    previousCash = financeData.latestEvents().events['cash'].value
     for year in range(2000, 2006):
         for month in [1, 6]:
             financeData.passEvent(date(year, month, 1), relativedelta(months=6))
-            newCash = financeData.latestState().cash
+            newCash = financeData.latestEvents().events['cash'].value
             assert newCash == pytest.approx(previousCash + 50)
             previousCash = newCash
 
 def testSalariedIncomeBiAnnual():
-    financeData = FinanceHistory(FinanceState(date(1999, 1, 1)))
-    events: list[FinanceEvent] = [constantSalariedIncome(100, AccrualModel.PeriodicYearly)]
-    financeData.setEventComponents(events)
-    previousCash = financeData.data[0].cash
+    eventGroup = EventGroup(date(1999, 1, 1),
+                            { 'i': ConstantSalariedIncome('i',
+                                                          100,
+                                                          AccrualModel.PeriodicYearly),
+                              'cash': CashEvent('cash', 0) })
+    financeData = FinanceHistory(eventGroup)
+    previousCash = financeData.latestEvents().events['cash'].value
     for year in range(2000, 2009, 2):
         financeData.passEvent(date(year, 1, 1), relativedelta(years=2))
-        newCash = financeData.latestState().cash
+        newCash = financeData.latestEvents().events['cash'].value
         assert newCash == pytest.approx(previousCash + 200)
         previousCash = newCash
 
 def testSalariedIncomeZero():
-    financeData = FinanceHistory(FinanceState(date(1999, 12, 1)))
-    events: list[FinanceEvent] = [constantSalariedIncome(0, AccrualModel.PeriodicMonthly)]
-    financeData.setEventComponents(events)
+    eventGroup = EventGroup(date(1999, 12, 1),
+                            { 'i': ConstantSalariedIncome('i',
+                                                          0,
+                                                          AccrualModel.PeriodicMonthly),
+                              'cash': CashEvent('cash', 0) })
+    financeData = FinanceHistory(eventGroup)
     for month in range(1, 13):
         financeData.passEvent(date(2000, month, 1), relativedelta(months=1))
-        newCash = financeData.latestState().cash
+        newCash = financeData.latestEvents().events['cash'].value
         assert newCash == 0
 
