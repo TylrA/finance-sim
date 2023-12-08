@@ -73,6 +73,11 @@ class TaxPaymentEvent(AbstractEvent):
                  frequency: relativedelta,
                  accrualModel: AccrualModel,
                  brackets: list[TaxBracket]):
+        if len(brackets) < 1:
+            raise ArgumentError('there must be at least one tax bracket')
+        if brackets[0].income != 0.0:
+            raise ArgumentError('brackets must start with ha zero income bracket')
+        
         self.name = name
         self.frequency = frequency
         self.accrualModel = accrualModel
