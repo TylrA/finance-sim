@@ -56,6 +56,9 @@ class CashEvent(AbstractEvent):
     def copy(self):
         return CashEvent(self.name, self.value)
 
+    def __str__(self):
+        return str(round(self.value, 2))
+
 @dataclass
 class TaxBracket(object):
     rate: float
@@ -108,6 +111,9 @@ class TaxPaymentEvent(AbstractEvent):
         result.taxesPaid = self.taxesPaid
         return result
 
+    def __str__(self):
+        return 'taxable income: {}; taxes paid: {}'.format(self.taxableIncome, self.taxesPaid)
+
 class ConstantGrowthAsset(AbstractEvent):
     '''
     "Constant" really means constant exponential rate
@@ -137,7 +143,7 @@ class ConstantGrowthAsset(AbstractEvent):
         return result
 
     def __str__(self) -> str:
-        return str(self.value)
+        return str(round(self.value, 2))
 
 def addToCash(events: EventGroup,
               difference: float,
@@ -219,6 +225,9 @@ class AmortizingLoan(AbstractEvent):
                                 self.payment)
         return result
 
+    def __str__(self):
+        return str(self.principle)
+
 class ConstantSalariedIncome(AbstractEvent):
     salary: float
     accrualModel: AccrualModel
@@ -237,6 +246,9 @@ class ConstantSalariedIncome(AbstractEvent):
     def copy(self):
         return ConstantSalariedIncome(self.name, self.salary, self.accrualModel)
 
+    def __str__(self):
+        return str(self.salary)
+
 class ConstantExpense(AbstractEvent):
     yearlyExpense: float
     accrualModel: AccrualModel
@@ -254,6 +266,9 @@ class ConstantExpense(AbstractEvent):
 
     def copy(self):
         return ConstantExpense(self.name, self.yearlyExpense, self.accrualModel)
+
+    def __str__(self):
+        return str(-self.yearlyExpense)
 
 class FinanceState(object):
     def __init__(self, date: date = date.today()):
