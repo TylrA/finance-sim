@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Any, Tuple
 
 import numpy as np
 from finance_sim.config import ScenarioConfig, StateType, parseConfig
@@ -12,18 +12,20 @@ from pandas import DataFrame
 from finance_sim.scheduling import AccrualModel
 
 def _assembleInitialState(config: ScenarioConfig) \
-    -> finSim.FinanceState:
-    result = finSim.FinanceState(config.time.startingDate)
+    -> finSim.EventGroup:
+    # result = finSim.FinanceState(config.time.startingDate)
+    events: dict[str, finSim.AbstractEvent] = {}
     for stateConfig in config.initialState:
         if stateConfig.type == StateType.cash:
-            result.cash += float(stateConfig.data['value'])
+            events[stateConfig.name] = finSim.CashEvent(stateConfig.name,
+                                                        stateConfig.data['value'])
         elif stateConfig.type == StateType.constantGrowthAsset:
-            result.constantGrowthAssets.append(
-                finSim.ConstantGrowthAsset(
-                    accrualModel=config.time.accrualModel,
-                    initialValue=stateConfig.data['value'],
-                    annualAppreciation=stateConfig.data['appreciation']))
-    return result
+            events[stateConfig.name] = \
+                finSim.ConstantGrowthAsset(stateConfig.name,
+                                           config.time.accrualModel,
+                                           stateConfig.data['value'],
+                                           stateConfig.data['appreciation'])
+    return finSim.EventGroup(config.time.startingDate, events)
 
 def _nextDate(eventDate: date, accrualModel: AccrualModel) -> Tuple[date, relativedelta]:
     if accrualModel == AccrualModel.PeriodicMonthly:
@@ -55,16 +57,16 @@ def _synchronizeUpdates(config: ScenarioConfig,
             if eventDate < scheduledEvent.endDate and not scheduledEvent.active:
                 scheduledState = scheduledEvent.state
                 if scheduledState.type == StateType.cash:
-                    latestState = history.latestState()
-                    latestState.cash += scheduledState.data['value']
-                    history.data[-1] = latestState
+                    latestEvents = history.latestEvents()
+                    finSim.addToCash(latestEvents, scheduledState.data['value'])
                 elif scheduledState.type == StateType.constantGrowthAsset:
-                    latestState = history.latestState()
+                    latestEvents = history.latestEvents()
                     constantGrowthAsset = finSim.ConstantGrowthAsset(
+                        scheduledState.name,
                         accrualModel=config.time.accrualModel,
                         initialValue=scheduledState.data['value'],
                         annualAppreciation=scheduledState.data['appreciation'])
-                    latestState.constantGrowthAssets.append(constantGrowthAsset)
+                    latestEvents.events[scheduledState.name] = constantGrowthAsset
                 scheduledEvent.active = True
             elif eventDate >= scheduledEvent.endDate and scheduledEvent.active:
                 scheduledState = scheduledEvent.state
@@ -91,14 +93,14 @@ def _simulate(config: ScenarioConfig, history: finSim.FinanceHistory):
         _synchronizeUpdates(config, eventDate, history)
         eventDate, delta = _nextDate(eventDate, accrualModel)
 
-def _stateToRow(state: finSim.FinanceState) -> list:
-    result = [state.date, state.cash, *state.constantGrowthAssets]
-    result.extend([value for _, value in state.amortizingLoans.items()])
+def _stateToRow(state: finSim.EventGroup) -> list:
+    result: list[Any] = [state.date]
+    result.extend([str(event) for _, event in state.events.items()])
     return result
 
 def report(config: ScenarioConfig) -> DataFrame:
-    initialState = _assembleInitialState(config)
-    history = finSim.FinanceHistory(initialState)
+    initialEvents = _assembleInitialState(config)
+    history = finSim.FinanceHistory(initialEvents)
     # history.setEventComponents(finSim.balanceComponents(history))
     _simulate(config, history)
     return DataFrame([_stateToRow(d) for d in history.data])
