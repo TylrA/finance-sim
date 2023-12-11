@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from math import pow
-from typing import Callable, Optional
+from typing import Any, Callable, Optional, Type
 
 from .scheduling import AccrualModel, portionOfYear
 
@@ -18,6 +18,8 @@ class AbstractEvent(abc.ABC):
     a lot of FinanceState and FinanceEvent. They can keep their names in the meantime.
     '''
     name: str
+    configType: str
+    configPattern: dict[str, Any]
 
     @abc.abstractmethod
     def transform(self,
@@ -29,6 +31,7 @@ class AbstractEvent(abc.ABC):
     @abc.abstractmethod
     def copy(self) -> AbstractEvent:
         raise NotImplementedError()
+abstractClasses: dict[str, Type[AbstractEvent]] = {}
 
 class EventGroup(object):
     date: date
@@ -40,6 +43,7 @@ class EventGroup(object):
     def copy(self):
         return EventGroup(self.date,
                           { name: event.copy() for name, event in self.events.items() })
+    
 
 class CashEvent(AbstractEvent):
     value: float
@@ -58,6 +62,7 @@ class CashEvent(AbstractEvent):
 
     def __str__(self):
         return str(round(self.value, 2))
+abstractClasses['cash'] = CashEvent
 
 @dataclass
 class TaxBracket(object):
@@ -112,7 +117,9 @@ class TaxPaymentEvent(AbstractEvent):
         return result
 
     def __str__(self):
-        return 'taxable income: {}; taxes paid: {}'.format(self.taxableIncome, self.taxesPaid)
+        return 'taxable income: {}; taxes paid: {}'.format(self.taxableIncome,
+                                                           self.taxesPaid)
+abstractClasses['tax-payment'] = TaxPaymentEvent
 
 class ConstantGrowthAsset(AbstractEvent):
     '''
@@ -144,6 +151,7 @@ class ConstantGrowthAsset(AbstractEvent):
 
     def __str__(self) -> str:
         return str(round(self.value, 2))
+abstractClasses['constant-growth-asset'] = ConstantGrowthAsset
 
 def addToCash(events: EventGroup,
               difference: float,
@@ -227,6 +235,7 @@ class AmortizingLoan(AbstractEvent):
 
     def __str__(self):
         return str(self.principle)
+abstractClasses['amortizing-loan'] = AmortizingLoan
 
 class ConstantSalariedIncome(AbstractEvent):
     salary: float
@@ -248,6 +257,7 @@ class ConstantSalariedIncome(AbstractEvent):
 
     def __str__(self):
         return str(self.salary)
+abstractClasses['constant-salaried-income'] = ConstantSalariedIncome
 
 class ConstantExpense(AbstractEvent):
     yearlyExpense: float
@@ -269,6 +279,7 @@ class ConstantExpense(AbstractEvent):
 
     def __str__(self):
         return str(-self.yearlyExpense)
+abstractClasses['constant-expense'] = ConstantExpense
 
 class FinanceState(object):
     def __init__(self, date: date = date.today()):
