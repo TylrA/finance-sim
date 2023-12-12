@@ -12,14 +12,13 @@ from typing import Any, Callable, Optional, Type
 
 from .scheduling import AccrualModel, portionOfYear
 
+EventConfigType = Optional[dict[str, Any]]
 class AbstractEvent(abc.ABC):
     '''
     "FinanceEvent" is a good name, but that's already taken. This should deprecate/rebase
     a lot of FinanceState and FinanceEvent. They can keep their names in the meantime.
     '''
     name: str
-    configType: str
-    configPattern: dict[str, Any]
 
     @abc.abstractmethod
     def transform(self,
@@ -31,7 +30,7 @@ class AbstractEvent(abc.ABC):
     @abc.abstractmethod
     def copy(self) -> AbstractEvent:
         raise NotImplementedError()
-abstractClasses: dict[str, Type[AbstractEvent]] = {}
+abstractEventType: dict[str, Type[AbstractEvent]] = {}
 
 class EventGroup(object):
     date: date
@@ -47,8 +46,11 @@ class EventGroup(object):
 
 class CashEvent(AbstractEvent):
     value: float
-    def __init__(self, name: str, value: float):
+
+    def __init__(self, config: EventConfigType, name: str, value: float = 0):
         self.name = name
+        if config is not None:
+            self.value = float(config['value'])
         self.value = value
 
     def transform(self,
@@ -58,11 +60,11 @@ class CashEvent(AbstractEvent):
         pass
 
     def copy(self):
-        return CashEvent(self.name, self.value)
+        return CashEvent(None, self.name, self.value)
 
     def __str__(self):
         return str(round(self.value, 2))
-abstractClasses['cash'] = CashEvent
+abstractEventType['cash'] = CashEvent
 
 @dataclass
 class TaxBracket(object):
@@ -77,10 +79,15 @@ class TaxPaymentEvent(AbstractEvent):
     taxesPaid: float
     
     def __init__(self,
+                 config: EventConfigType,
                  name: str,
-                 frequency: relativedelta,
-                 accrualModel: AccrualModel,
-                 brackets: list[TaxBracket]):
+                 frequency: relativedelta = relativedelta(months=1),
+                 accrualModel: AccrualModel = AccrualModel.PeriodicMonthly,
+                 brackets: list[TaxBracket] = []):
+        if config is not None:
+            frequency = config['frequency']
+            accrualModel = config['accrualModel'] # todo: pass this through some kind of parse to ensure
+            brackets = config['brackets'] # todo: same as above
         if len(brackets) < 1:
             raise ArgumentError('there must be at least one tax bracket')
         if brackets[0].income != 0.0:
@@ -108,7 +115,8 @@ class TaxPaymentEvent(AbstractEvent):
                 
 
     def copy(self):
-        result = TaxPaymentEvent(self.name,
+        result = TaxPaymentEvent(None,
+                                 self.name,
                                  self.frequency,
                                  self.accrualModel,
                                  self.brackets)
@@ -119,7 +127,7 @@ class TaxPaymentEvent(AbstractEvent):
     def __str__(self):
         return 'taxable income: {}; taxes paid: {}'.format(self.taxableIncome,
                                                            self.taxesPaid)
-abstractClasses['tax-payment'] = TaxPaymentEvent
+abstractEventType['tax-payment'] = TaxPaymentEvent
 
 class ConstantGrowthAsset(AbstractEvent):
     '''
@@ -129,10 +137,15 @@ class ConstantGrowthAsset(AbstractEvent):
     appreciation: float
     
     def __init__(self,
+                 config: EventConfigType,
                  name: str,
-                 accrualModel: AccrualModel,
+                 accrualModel: AccrualModel = AccrualModel.PeriodicMonthly,
                  initialValue: float = 0,
                  annualAppreciation: float = 0):
+        if config is not None:
+            accrualModel = config['accrualModel'] # todo
+            initialValue = config['initialValue']
+            annualAppreciation = config['annualAppreciation']
         self.name = name
         self.value = initialValue
         self.appreciation = annualAppreciation
@@ -146,12 +159,16 @@ class ConstantGrowthAsset(AbstractEvent):
         self.value *= pow(1 + self.appreciation, portion)
 
     def copy(self) -> ConstantGrowthAsset:
-        result = ConstantGrowthAsset(self.name, self.accrualModel, self.value, self.appreciation)
+        result = ConstantGrowthAsset(None,
+                                     self.name,
+                                     self.accrualModel,
+                                     self.value,
+                                     self.appreciation)
         return result
 
     def __str__(self) -> str:
         return str(round(self.value, 2))
-abstractClasses['constant-growth-asset'] = ConstantGrowthAsset
+abstractEventType['constant-growth-asset'] = ConstantGrowthAsset
 
 def addToCash(events: EventGroup,
               difference: float,
@@ -193,13 +210,21 @@ class AmortizingLoan(AbstractEvent):
     payment: float
     
     def __init__(self,
+                 config: EventConfigType,
                  name: str,
-                 accrualModel: AccrualModel,
+                 accrualModel: AccrualModel = AccrualModel.PeriodicMonthly,
                  initialPrinciple: float = 0,
                  loanAmount: float = 0,
                  rate: float = 0.05,
                  remainingTermInYears: float = 20,
                  payment: float = -1):
+        if config is not None:
+            accrualModel = config['accrualModel']
+            initialPrinciple = config['initialPrinciple']
+            loanAmount = config['loanAmount']
+            rate = config['rate']
+            remainingTermInYears = config['remainingTermInYears']
+            payment = config['payment']
         self.name = name
         self.accrualModel = accrualModel
         self.principle = initialPrinciple
@@ -224,7 +249,8 @@ class AmortizingLoan(AbstractEvent):
         addToCash(history.pendingEvent, -self.payment)
 
     def copy(self):
-        result = AmortizingLoan(self.name,
+        result = AmortizingLoan(None,
+                                self.name,
                                 self.accrualModel,
                                 self.principle,
                                 self.loanAmount,
@@ -235,12 +261,19 @@ class AmortizingLoan(AbstractEvent):
 
     def __str__(self):
         return str(self.principle)
-abstractClasses['amortizing-loan'] = AmortizingLoan
+abstractEventType['amortizing-loan'] = AmortizingLoan
 
 class ConstantSalariedIncome(AbstractEvent):
     salary: float
     accrualModel: AccrualModel
-    def __init__(self, name: str, salary: float, accrualModel: AccrualModel):
+    def __init__(self,
+                 config: EventConfigType,
+                 name: str,
+                 salary: float = 0,
+                 accrualModel: AccrualModel = AccrualModel.PeriodicMonthly):
+        if config is not None:
+            salary = config['salary']
+            accrualModel = config['accrualModel']
         self.name = name
         self.salary = salary
         self.accrualModel = accrualModel
@@ -253,16 +286,23 @@ class ConstantSalariedIncome(AbstractEvent):
         addToCash(history.pendingEvent, portion * self.salary)
 
     def copy(self):
-        return ConstantSalariedIncome(self.name, self.salary, self.accrualModel)
+        return ConstantSalariedIncome(None, self.name, self.salary, self.accrualModel)
 
     def __str__(self):
         return str(self.salary)
-abstractClasses['constant-salaried-income'] = ConstantSalariedIncome
+abstractEventType['constant-salaried-income'] = ConstantSalariedIncome
 
 class ConstantExpense(AbstractEvent):
     yearlyExpense: float
     accrualModel: AccrualModel
-    def __init__(self, name: str, yearlyExpense: float, accrualModel: AccrualModel):
+    def __init__(self,
+                 config: EventConfigType,
+                 name: str,
+                 yearlyExpense: float = 0,
+                 accrualModel: AccrualModel = AccrualModel.PeriodicMonthly):
+        if config is not None:
+            yearlyExpense = config['yearlyExpense']
+            accrualModel = config['accrualModel']
         self.name = name
         self.yearlyExpense = yearlyExpense
         self.accrualModel = accrualModel
@@ -275,11 +315,11 @@ class ConstantExpense(AbstractEvent):
         addToCash(history.pendingEvent, -portion * self.yearlyExpense)
 
     def copy(self):
-        return ConstantExpense(self.name, self.yearlyExpense, self.accrualModel)
+        return ConstantExpense(None, self.name, self.yearlyExpense, self.accrualModel)
 
     def __str__(self):
         return str(-self.yearlyExpense)
-abstractClasses['constant-expense'] = ConstantExpense
+abstractEventType['constant-expense'] = ConstantExpense
 
 class FinanceState(object):
     def __init__(self, date: date = date.today()):
