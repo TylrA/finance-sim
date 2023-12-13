@@ -6,10 +6,11 @@ from dateutil.relativedelta import relativedelta
 
 def testSalariedIncomeMonthly():
     eventGroup = EventGroup(date(2000, 1, 1),
-                            { 'i': ConstantSalariedIncome('i',
+                            { 'i': ConstantSalariedIncome(None,
+                                                          'i',
                                                           120,
                                                           AccrualModel.PeriodicMonthly),
-                              'cash': CashEvent('cash', 0) })
+                              'cash': CashEvent(None, 'cash', 0) })
     financeData = FinanceHistory(eventGroup)
     previousCash = financeData.latestEvents().events['cash'].value
     delta = relativedelta(months=1)
@@ -18,13 +19,14 @@ def testSalariedIncomeMonthly():
         newCash = financeData.latestEvents().events['cash'].value
         assert newCash == pytest.approx(previousCash + 10)
         previousCash = newCash
-    
+        
 def testSalariedIncomeSemiMonthly():
     eventGroup = EventGroup(date(2000, 1, 15),
-                            { 'i': ConstantSalariedIncome('i',
+                            { 'i': ConstantSalariedIncome(None,
+                                                          'i',
                                                           120,
                                                           AccrualModel.PeriodicSemiMonthly),
-                              'cash': CashEvent('cash', 0) })
+                              'cash': CashEvent(None, 'cash', 0) })
     financeData = FinanceHistory(eventGroup)
     previousCash = financeData.latestEvents().events['cash'].value
     delta = relativedelta(months=1)
@@ -37,17 +39,18 @@ def testSalariedIncomeSemiMonthly():
             delta = relativedelta(days = day - 15)
         else:
             delta = relativedelta(days = 15)
-        financeData.passEvent(adjustedDate, delta)
-        newCash = financeData.latestEvents().events['cash'].value
-        assert newCash == pytest.approx(previousCash + 5)
-        previousCash = newCash
-    
+            financeData.passEvent(adjustedDate, delta)
+            newCash = financeData.latestEvents().events['cash'].value
+            assert newCash == pytest.approx(previousCash + 5)
+            previousCash = newCash
+            
 def testSalariedIncomeSemiAnnual():
     eventGroup = EventGroup(date(1999, 6, 1),
-                            { 'i': ConstantSalariedIncome('i',
+                            { 'i': ConstantSalariedIncome(None,
+                                                          'i',
                                                           100,
                                                           AccrualModel.PeriodicMonthly),
-                              'cash': CashEvent('cash', 0) })
+                              'cash': CashEvent(None, 'cash', 0) })
     financeData = FinanceHistory(eventGroup)
     previousCash = financeData.latestEvents().events['cash'].value
     for year in range(2000, 2006):
@@ -59,10 +62,11 @@ def testSalariedIncomeSemiAnnual():
 
 def testSalariedIncomeBiAnnual():
     eventGroup = EventGroup(date(1999, 1, 1),
-                            { 'i': ConstantSalariedIncome('i',
+                            { 'i': ConstantSalariedIncome(None,
+                                                          'i',
                                                           100,
                                                           AccrualModel.PeriodicYearly),
-                              'cash': CashEvent('cash', 0) })
+                              'cash': CashEvent(None, 'cash', 0) })
     financeData = FinanceHistory(eventGroup)
     previousCash = financeData.latestEvents().events['cash'].value
     for year in range(2000, 2009, 2):
@@ -73,10 +77,11 @@ def testSalariedIncomeBiAnnual():
 
 def testSalariedIncomeZero():
     eventGroup = EventGroup(date(1999, 12, 1),
-                            { 'i': ConstantSalariedIncome('i',
+                            { 'i': ConstantSalariedIncome(None,
+                                                          'i',
                                                           0,
                                                           AccrualModel.PeriodicMonthly),
-                              'cash': CashEvent('cash', 0) })
+                              'cash': CashEvent(None, 'cash', 0) })
     financeData = FinanceHistory(eventGroup)
     for month in range(1, 13):
         financeData.passEvent(date(2000, month, 1), relativedelta(months=1))

@@ -5,10 +5,11 @@ from dateutil.relativedelta import relativedelta
 
 
 def testExpenseMonthly():
-    initialEvents = { 'expense': ConstantExpense('expense',
+    initialEvents = { 'expense': ConstantExpense(None,
+                                                 'expense',
                                                  120,
                                                  AccrualModel.PeriodicMonthly),
-                      'cash': CashEvent('cash', 10000) }
+                      'cash': CashEvent(None, 'cash', 10000) }
     eventGroup = EventGroup(date(1999, 12, 1), initialEvents)
     financeData = FinanceHistory(eventGroup)
     delta = relativedelta(months=1)
@@ -19,10 +20,11 @@ def testExpenseMonthly():
     assert financeData.data[2].events['cash'].value == pytest.approx(9980)
 
 def testExpenseAnnual():
-    initialEvents = { 'expense': ConstantExpense('expense',
+    initialEvents = { 'expense': ConstantExpense(None,
+                                                 'expense',
                                                  120,
                                                  AccrualModel.ProRata),
-                      'cash': CashEvent('cash', 10000) }
+                      'cash': CashEvent(None, 'cash', 10000) }
     eventGroup = EventGroup(date(2001, 1, 1), initialEvents)
     financeData = FinanceHistory(eventGroup)
     delta = relativedelta(years=1)
@@ -33,10 +35,11 @@ def testExpenseAnnual():
     assert financeData.data[2].events['cash'].value == pytest.approx(9760)
 
 def testExpenseZero():
-    initialEvents = { 'expense': ConstantExpense('expense',
+    initialEvents = { 'expense': ConstantExpense(None,
+                                                 'expense',
                                                  0,
                                                  AccrualModel.ProRata),
-                      'cash': CashEvent('cash', 10000) }
+                      'cash': CashEvent(None, 'cash', 10000) }
     eventGroup = EventGroup(date(2001, 1, 1), initialEvents)
     financeData = FinanceHistory(eventGroup)
     delta = relativedelta(years=1)
