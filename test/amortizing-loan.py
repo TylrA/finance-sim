@@ -4,9 +4,9 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 def testAmortizingLoanTerm():
-    loan = AmortizingLoan('test', AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
+    loan = AmortizingLoan(None, 'test', AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
     eventGroup = EventGroup(date(1999, 12, 1), {'test': loan,
-                                                'cash': CashEvent('cash', 600000)})
+                                                'cash': CashEvent(None, 'cash', 600000)})
     history = FinanceHistory(eventGroup)
     delta = relativedelta(months=1)
     history.passEvent(date(2000, 1, 1), delta)
@@ -20,9 +20,9 @@ def testAmortizingLoanTerm():
     assert event.term == pytest.approx(19)
 
 def testAmortizingLoanFullPayment():
-    loan = AmortizingLoan('test', AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
+    loan = AmortizingLoan(None, 'test', AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
     eventGroup = EventGroup(date(1999, 12, 1), { 'test': loan,
-                                                 'cash': CashEvent('cash', 600000) })
+                                                 'cash': CashEvent(None, 'cash', 600000) })
     history = FinanceHistory(eventGroup)
     event = history.latestEvents().events['test']
     assert isinstance(event, AmortizingLoan)
@@ -36,9 +36,9 @@ def testAmortizingLoanFullPayment():
     assert event.principle == pytest.approx(100000)
 
 def testAmortizingLoanConstantPaymentCost():
-    loan = AmortizingLoan('test', AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
+    loan = AmortizingLoan(None, 'test', AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
     eventGroup = EventGroup(date(1999, 12, 1), { 'test': loan,
-                                                 'cash': CashEvent('cash', 600000) })
+                                                 'cash': CashEvent(None, 'cash', 600000) })
     history = FinanceHistory(eventGroup)
     delta = relativedelta(months=1)
     history.passEvent(date(2000, 1, 1), delta)
@@ -53,9 +53,9 @@ def testAmortizingLoanConstantPaymentCost():
         previousCash = newCash
 
 def testAmortizingLoanInterestRate():
-    loan = AmortizingLoan('test', AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
+    loan = AmortizingLoan(None, 'test', AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
     eventGroup = EventGroup(date(2000, 1, 1), { 'test': loan,
-                                                 'cash': CashEvent('cash', 600000) })
+                                                 'cash': CashEvent(None, 'cash', 600000) })
     history = FinanceHistory(eventGroup)
     delta = relativedelta(years=1)
     history.passEvent(date(2001, 1, 1), delta)
