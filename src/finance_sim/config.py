@@ -8,6 +8,7 @@ from enum import Enum
 from typing import Any
 
 from finance_sim.scheduling import AccrualModel
+from finance_sim.util import parseAccrualModel
 
 @dataclass
 class TimeConfig(object):
@@ -62,29 +63,6 @@ def _parseGranularity(granularityStr: str) -> relativedelta:
 
     raise RuntimeError('None of the supported units was used')
 
-def _parseAccrualModel(accrualModelStr: str) -> AccrualModel:
-    pattern = r'(pro rata|periodic (?:monthly|semi ?monthly|weekly|biweekly|yearly))'
-    match = re.match(pattern, accrualModelStr)
-    if not match:
-        raise ArgumentError('accrualModelStr must match the regex pattern {}, got {}'
-                            .format(pattern, accrualModelStr))
-
-    if accrualModelStr == 'pro rata':
-        return AccrualModel.ProRata
-    if accrualModelStr == 'periodic monthly':
-        return AccrualModel.PeriodicMonthly
-    if accrualModelStr == 'periodic semi monthly' or \
-       accrualModelStr == 'periodic semimonthly':
-        return AccrualModel.PeriodicSemiMonthly
-    if accrualModelStr == 'periodic weekly':
-        return AccrualModel.PeriodicWeekly
-    if accrualModelStr == 'periodic biweekly':
-        return AccrualModel.PeriodicBiweekly
-    if accrualModelStr == 'periodic yearly':
-        return AccrualModel.PeriodicYearly
-
-    raise RuntimeError('None of the supported accrual model was used')
-
 def _parseState(stateConfig) -> StateConfig:
     if stateConfig['type'] == 'cash':
         stateType = StateType.cash
@@ -127,7 +105,7 @@ def parseConfig(path: str) -> ScenarioConfig:
                                'and "period"')
         timeConfig = TimeConfig(
             granularity=_parseGranularity(rawTimeConfig['granularity']),
-            accrualModel=_parseAccrualModel(rawTimeConfig['accrualModel']),
+            accrualModel=parseAccrualModel(rawTimeConfig['accrualModel']),
             period=int(rawTimeConfig['period']),
             startingDate=rawTimeConfig['startingDate'])
 
