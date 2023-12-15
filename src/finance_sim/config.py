@@ -7,8 +7,8 @@ from dateutil.relativedelta import relativedelta
 from enum import Enum
 from typing import Any
 
-from finance_sim.scheduling import AccrualModel
-from finance_sim.util import parseAccrualModel
+from .scheduling import AccrualModel
+from .util import parseAccrualModel
 
 @dataclass
 class TimeConfig(object):

@@ -1,31 +1,38 @@
 from typing import Any, Tuple
 
 import numpy as np
-from finance_sim.config import ScenarioConfig, StateType, parseConfig
-import finance_sim.main as finSim
-
 from calendar import monthrange
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from pandas import DataFrame
 
-from finance_sim.scheduling import AccrualModel
+from .config import ScenarioConfig, StateType, parseConfig
+from .main import \
+    EventGroup, \
+    AbstractEvent, \
+    CashEvent, \
+    ConstantGrowthAsset, \
+    FinanceHistory, \
+    addToCash
+from .scheduling import AccrualModel
 
 def _assembleInitialState(config: ScenarioConfig) \
-    -> finSim.EventGroup:
+    -> EventGroup:
     # result = finSim.FinanceState(config.time.startingDate)
-    events: dict[str, finSim.AbstractEvent] = {}
+    events: dict[str, AbstractEvent] = {}
     for stateConfig in config.initialState:
         if stateConfig.type == StateType.cash:
-            events[stateConfig.name] = finSim.CashEvent(stateConfig.name,
-                                                        stateConfig.data['value'])
+            events[stateConfig.name] = CashEvent(None,
+                                                 stateConfig.name,
+                                                 stateConfig.data['value'])
         elif stateConfig.type == StateType.constantGrowthAsset:
             events[stateConfig.name] = \
-                finSim.ConstantGrowthAsset(stateConfig.name,
-                                           config.time.accrualModel,
-                                           stateConfig.data['value'],
-                                           stateConfig.data['appreciation'])
-    return finSim.EventGroup(config.time.startingDate, events)
+                ConstantGrowthAsset(None,
+                                    stateConfig.name,
+                                    config.time.accrualModel,
+                                    stateConfig.data['value'],
+                                    stateConfig.data['appreciation'])
+    return EventGroup(config.time.startingDate, events)
 
 def _nextDate(eventDate: date, accrualModel: AccrualModel) -> Tuple[date, relativedelta]:
     if accrualModel == AccrualModel.PeriodicMonthly:
@@ -51,17 +58,18 @@ def _nextDate(eventDate: date, accrualModel: AccrualModel) -> Tuple[date, relati
 
 def _synchronizeUpdates(config: ScenarioConfig,
                         eventDate: date,
-                        history: finSim.FinanceHistory):
+                        history: FinanceHistory):
     for scheduledEvent in config.scheduledValues:
         if eventDate >= scheduledEvent.startDate:
             if eventDate < scheduledEvent.endDate and not scheduledEvent.active:
                 scheduledState = scheduledEvent.state
                 if scheduledState.type == StateType.cash:
                     latestEvents = history.latestEvents()
-                    finSim.addToCash(latestEvents, scheduledState.data['value'])
+                    addToCash(latestEvents, scheduledState.data['value'])
                 elif scheduledState.type == StateType.constantGrowthAsset:
                     latestEvents = history.latestEvents()
-                    constantGrowthAsset = finSim.ConstantGrowthAsset(
+                    constantGrowthAsset = ConstantGrowthAsset(
+                        None,
                         scheduledState.name,
                         accrualModel=config.time.accrualModel,
                         initialValue=scheduledState.data['value'],
@@ -85,7 +93,7 @@ def _synchronizeUpdates(config: ScenarioConfig,
                                        "Period end date: {}".format(eventEndDate))
                 scheduledEvent.active = False
 
-def _simulate(config: ScenarioConfig, history: finSim.FinanceHistory):
+def _simulate(config: ScenarioConfig, history: FinanceHistory):
     accrualModel = config.time.accrualModel
     eventDate, delta = _nextDate(config.time.startingDate, accrualModel)
     while eventDate < (config.time.startingDate + relativedelta(years=config.time.period)):
@@ -93,15 +101,14 @@ def _simulate(config: ScenarioConfig, history: finSim.FinanceHistory):
         _synchronizeUpdates(config, eventDate, history)
         eventDate, delta = _nextDate(eventDate, accrualModel)
 
-def _stateToRow(state: finSim.EventGroup) -> list:
+def _stateToRow(state: EventGroup) -> list:
     result: list[Any] = [state.date]
     result.extend([str(event) for _, event in state.events.items()])
     return result
 
 def report(config: ScenarioConfig) -> DataFrame:
     initialEvents = _assembleInitialState(config)
-    history = finSim.FinanceHistory(initialEvents)
-    # history.setEventComponents(finSim.balanceComponents(history))
+    history = FinanceHistory(initialEvents)
     _simulate(config, history)
     return DataFrame([_stateToRow(d) for d in history.data])
 

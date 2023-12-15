@@ -1,7 +1,7 @@
 from ctypes import ArgumentError
 import re
 
-from finance_sim.scheduling import AccrualModel
+from .scheduling import AccrualModel
 
 def parseAccrualModel(accrualModelStr: str) -> AccrualModel:
     pattern = r'(pro rata|periodic (?:monthly|semi ?monthly|weekly|biweekly|yearly))'
@@ -24,4 +24,4 @@ def parseAccrualModel(accrualModelStr: str) -> AccrualModel:
     if accrualModelStr == 'periodic yearly':
         return AccrualModel.PeriodicYearly
 
-    raise RuntimeError('None of the supported accrual model was used'
+    raise RuntimeError('None of the supported accrual model was used')
