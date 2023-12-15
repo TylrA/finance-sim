@@ -11,6 +11,7 @@ from math import pow
 from typing import Any, Callable, Optional, Type
 
 from .scheduling import AccrualModel, portionOfYear
+from .util import parseAccrualModel
 
 EventConfigType = Optional[dict[str, Any]]
 class AbstractEvent(abc.ABC):
@@ -86,7 +87,7 @@ class TaxPaymentEvent(AbstractEvent):
                  brackets: list[TaxBracket] = []):
         if config is not None:
             frequency = config['frequency']
-            accrualModel = config['accrualModel'] # todo: pass this through some kind of parse to ensure
+            accrualModel = parseAccrualModel(config['accrualModel'])
             brackets = config['brackets'] # todo: same as above
         if len(brackets) < 1:
             raise ArgumentError('there must be at least one tax bracket')
@@ -143,7 +144,7 @@ class ConstantGrowthAsset(AbstractEvent):
                  initialValue: float = 0,
                  annualAppreciation: float = 0):
         if config is not None:
-            accrualModel = config['accrualModel'] # todo
+            accrualModel = parseAccrualModel(config['accrualModel'])
             initialValue = config['initialValue']
             annualAppreciation = config['annualAppreciation']
         self.name = name
@@ -219,7 +220,7 @@ class AmortizingLoan(AbstractEvent):
                  remainingTermInYears: float = 20,
                  payment: float = -1):
         if config is not None:
-            accrualModel = config['accrualModel']
+            accrualModel = parseAccrualModel(config['accrualModel'])
             initialPrinciple = config['initialPrinciple']
             loanAmount = config['loanAmount']
             rate = config['rate']
@@ -273,7 +274,7 @@ class ConstantSalariedIncome(AbstractEvent):
                  accrualModel: AccrualModel = AccrualModel.PeriodicMonthly):
         if config is not None:
             salary = config['salary']
-            accrualModel = config['accrualModel']
+            accrualModel = parseAccrualModel(config['accrualModel'])
         self.name = name
         self.salary = salary
         self.accrualModel = accrualModel
@@ -302,7 +303,7 @@ class ConstantExpense(AbstractEvent):
                  accrualModel: AccrualModel = AccrualModel.PeriodicMonthly):
         if config is not None:
             yearlyExpense = config['yearlyExpense']
-            accrualModel = config['accrualModel']
+            accrualModel = parseAccrualModel(config['accrualModel'])
         self.name = name
         self.yearlyExpense = yearlyExpense
         self.accrualModel = accrualModel
