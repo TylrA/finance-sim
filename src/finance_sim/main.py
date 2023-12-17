@@ -22,6 +22,10 @@ class AbstractEvent(abc.ABC):
     name: str
 
     @abc.abstractmethod
+    def __init__(self, config: EventConfigType, name: str, **kwargs):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def transform(self,
                   history: FinanceHistory,
                   date: date,
