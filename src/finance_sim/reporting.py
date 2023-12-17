@@ -13,7 +13,8 @@ from .main import \
     CashEvent, \
     ConstantGrowthAsset, \
     FinanceHistory, \
-    addToCash
+    addToCash, \
+    abstractEventType
 from .scheduling import AccrualModel
 
 def _assembleInitialState(config: ScenarioConfig) \
@@ -32,6 +33,10 @@ def _assembleInitialState(config: ScenarioConfig) \
                                     config.time.accrualModel,
                                     stateConfig.data['value'],
                                     stateConfig.data['appreciation'])
+        else:
+            events[stateConfig.name] = \
+                abstractEventType[str(stateConfig.type)](stateConfig.data,
+                                                         stateConfig.name)
     return EventGroup(config.time.startingDate, events)
 
 def _nextDate(eventDate: date, accrualModel: AccrualModel) -> Tuple[date, relativedelta]:
