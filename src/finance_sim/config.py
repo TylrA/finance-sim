@@ -17,13 +17,9 @@ class TimeConfig(object):
     period: int
     startingDate: date
 
-class StateType(Enum):
-    cash = 1
-    constantGrowthAsset = 2
-
 @dataclass
 class StateConfig(object):
-    type: StateType
+    type: str
     name: str
     data: dict[str, Any]
 
@@ -64,13 +60,7 @@ def _parseGranularity(granularityStr: str) -> relativedelta:
     raise RuntimeError('None of the supported units was used')
 
 def _parseState(stateConfig) -> StateConfig:
-    if stateConfig['type'] == 'cash':
-        stateType = StateType.cash
-    elif stateConfig['type'] == 'constant-growth-asset':
-        stateType = StateType.constantGrowthAsset
-    else:
-        raise RuntimeError('stateConfig type only supports "cash" and ' +
-                           '"constant-growth-asset"')
+    stateType = stateConfig['type']
 
     return StateConfig(type=stateType,
                        data=stateConfig['data'],
