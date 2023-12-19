@@ -22,21 +22,12 @@ def _assembleInitialState(config: ScenarioConfig) \
     # result = finSim.FinanceState(config.time.startingDate)
     events: dict[str, AbstractEvent] = {}
     for stateConfig in config.initialState:
-        if stateConfig.type == StateType.cash:
-            events[stateConfig.name] = CashEvent(None,
-                                                 stateConfig.name,
-                                                 stateConfig.data['value'])
-        elif stateConfig.type == StateType.constantGrowthAsset:
+        if stateConfig.type in abstractEventType:
             events[stateConfig.name] = \
-                ConstantGrowthAsset(None,
-                                    stateConfig.name,
-                                    config.time.accrualModel,
-                                    stateConfig.data['value'],
-                                    stateConfig.data['appreciation'])
+                abstractEventType[stateConfig.type](stateConfig.data,
+                                                    stateConfig.name)
         else:
-            events[stateConfig.name] = \
-                abstractEventType[str(stateConfig.type)](stateConfig.data,
-                                                         stateConfig.name)
+            raise RuntimeError('{} is not a valid event type'.format(stateConfig.type))
     return EventGroup(config.time.startingDate, events)
 
 def _nextDate(eventDate: date, accrualModel: AccrualModel) -> Tuple[date, relativedelta]:
