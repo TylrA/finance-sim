@@ -10,7 +10,6 @@ from .config import ScenarioConfig, StateType, parseConfig
 from .main import \
     EventGroup, \
     AbstractEvent, \
-    CashEvent, \
     ConstantGrowthAsset, \
     FinanceHistory, \
     addToCash, \
@@ -19,7 +18,6 @@ from .scheduling import AccrualModel
 
 def _assembleInitialState(config: ScenarioConfig) \
     -> EventGroup:
-    # result = finSim.FinanceState(config.time.startingDate)
     events: dict[str, AbstractEvent] = {}
     for stateConfig in config.initialState:
         if stateConfig.type in abstractEventType:
