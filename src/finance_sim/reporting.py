@@ -57,19 +57,29 @@ def _synchronizeUpdates(config: ScenarioConfig,
         if eventDate >= scheduledEvent.startDate:
             if eventDate < scheduledEvent.endDate and not scheduledEvent.active:
                 scheduledState = scheduledEvent.state
-                if scheduledState.type == StateType.cash:
+                if scheduledState.type in abstractEventType:
                     latestEvents = history.latestEvents()
-                    addToCash(latestEvents, scheduledState.data['value'])
-                elif scheduledState.type == StateType.constantGrowthAsset:
-                    latestEvents = history.latestEvents()
-                    constantGrowthAsset = ConstantGrowthAsset(
-                        None,
-                        scheduledState.name,
-                        accrualModel=config.time.accrualModel,
-                        initialValue=scheduledState.data['value'],
-                        annualAppreciation=scheduledState.data['appreciation'])
-                    latestEvents.events[scheduledState.name] = constantGrowthAsset
-                scheduledEvent.active = True
+                    latestEvents.events[scheduledState.name] = \
+                        abstractEventType[scheduledState.type](
+                            scheduledState.data,
+                            scheduledState.name)
+                    scheduledEvent.active = True
+                # else:
+                #     raise RuntimeError('{} is not a valid event type'.format(
+                #         scheduledState.type))
+                # if scheduledState.type == StateType.cash:
+                #     latestEvents = history.latestEvents()
+                #     addToCash(latestEvents, scheduledState.data['value'])
+                # elif scheduledState.type == StateType.constantGrowthAsset:
+                #     latestEvents = history.latestEvents()
+                #     constantGrowthAsset = ConstantGrowthAsset(
+                #         None,
+                #         scheduledState.name,
+                #         accrualModel=config.time.accrualModel,
+                #         initialValue=scheduledState.data['value'],
+                #         annualAppreciation=scheduledState.data['appreciation'])
+                #     latestEvents.events[scheduledState.name] = constantGrowthAsset
+                # scheduledEvent.active = True
             elif eventDate >= scheduledEvent.endDate and scheduledEvent.active:
                 scheduledState = scheduledEvent.state
                 if scheduledState.type == StateType.cash:
