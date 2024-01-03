@@ -82,26 +82,15 @@ def _synchronizeUpdates(config: ScenarioConfig,
                 # scheduledEvent.active = True
             elif eventDate >= scheduledEvent.endDate and scheduledEvent.active:
                 scheduledState = scheduledEvent.state
-                if scheduledState.type == StateType.cash:
-                    delta = relativedelta(years=config.time.period)
-                    eventEndDate = config.time.startingDate + delta
-                    raise RuntimeError("scheduled cash events should not end before the " +
-                                       "period ends.\nEvent date: {}\n".format(eventDate) +
-                                       "Period end date: {}".format(eventEndDate))
-                elif scheduledState.type == StateType.constantGrowthAsset:
-                    delta = relativedelta(years=config.time.period)
-                    eventEndDate = config.time.startingDate + delta
-                    raise RuntimeError("scheduled events of the type constant growth " +
-                                       "asset should not end before the period ends.\n" +
-                                       "Event date: {}\n".format(eventDate) +
-                                       "Period end date: {}".format(eventEndDate))
+                latestEvents = history.latestEvents()
+                del latestEvents.events[scheduledState.name] # todo: see below todo
                 scheduledEvent.active = False
 
 def _simulate(config: ScenarioConfig, history: FinanceHistory):
     accrualModel = config.time.accrualModel
     eventDate, delta = _nextDate(config.time.startingDate, accrualModel)
     while eventDate < (config.time.startingDate + relativedelta(years=config.time.period)):
-        history.passEvent(eventDate, delta)
+        history.passEvent(eventDate, delta) # todo: split passEvent into 2 parts so we can delete the pending event, rather than the previous event
         _synchronizeUpdates(config, eventDate, history)
         eventDate, delta = _nextDate(eventDate, accrualModel)
 
