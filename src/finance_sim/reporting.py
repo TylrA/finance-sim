@@ -58,8 +58,8 @@ def _synchronizeUpdates(config: ScenarioConfig,
             if eventDate < scheduledEvent.endDate and not scheduledEvent.active:
                 scheduledState = scheduledEvent.state
                 if scheduledState.type in abstractEventType:
-                    latestEvents = history.latestEvents()
-                    latestEvents.events[scheduledState.name] = \
+                    pendingEvents = history.pendingEvent
+                    pendingEvents.events[scheduledState.name] = \
                         abstractEventType[scheduledState.type](
                             scheduledState.data,
                             scheduledState.name)
@@ -82,16 +82,18 @@ def _synchronizeUpdates(config: ScenarioConfig,
                 # scheduledEvent.active = True
             elif eventDate >= scheduledEvent.endDate and scheduledEvent.active:
                 scheduledState = scheduledEvent.state
-                latestEvents = history.latestEvents()
-                del latestEvents.events[scheduledState.name] # todo: see below todo
+                # latestEvents = history.latestEvents()
+                pendingEvents = history.pendingEvent
+                del pendingEvents.events[scheduledState.name] # todo: see below todo
                 scheduledEvent.active = False
 
 def _simulate(config: ScenarioConfig, history: FinanceHistory):
     accrualModel = config.time.accrualModel
     eventDate, delta = _nextDate(config.time.startingDate, accrualModel)
     while eventDate < (config.time.startingDate + relativedelta(years=config.time.period)):
-        history.passEvent(eventDate, delta) # todo: split passEvent into 2 parts so we can delete the pending event, rather than the previous event
+        history._startPendingEvent(eventDate)
         _synchronizeUpdates(config, eventDate, history)
+        history._processAndPushPending(eventDate, delta)
         eventDate, delta = _nextDate(eventDate, accrualModel)
 
 def _stateToRow(state: EventGroup) -> list:
