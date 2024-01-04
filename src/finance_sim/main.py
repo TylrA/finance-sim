@@ -352,12 +352,18 @@ class FinanceHistory(object):
         self.data: list[EventGroup] = [event]
         self.events: list[FinanceEvent] = []
 
-    def passEvent(self, date: date, period: relativedelta):
+    def _startPendingEvent(self, date: date):
         self.pendingEvent = self.data[-1].copy()
         self.pendingEvent.date = date
+
+    def _processAndPushPending(self, date: date, period: relativedelta):
         for _, event in self.pendingEvent.events.items():
             event.transform(self, date, period)
         self.data.append(self.pendingEvent)
+
+    def passEvent(self, date: date, period: relativedelta):
+        self._startPendingEvent(date)
+        self._processAndPushPending(date, period)
     
     def appendEvent(self, events: EventGroup):
         self.data.append(events)
