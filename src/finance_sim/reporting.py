@@ -6,14 +6,8 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from pandas import DataFrame
 
-from .config import ScenarioConfig, StateType, parseConfig
-from .main import \
-    EventGroup, \
-    AbstractEvent, \
-    ConstantGrowthAsset, \
-    FinanceHistory, \
-    addToCash, \
-    abstractEventType
+from .config import ScenarioConfig, parseConfig
+from .main import EventGroup, AbstractEvent, FinanceHistory, abstractEventType
 from .scheduling import AccrualModel
 
 def _assembleInitialState(config: ScenarioConfig) \
@@ -64,25 +58,8 @@ def _synchronizeUpdates(config: ScenarioConfig,
                             scheduledState.data,
                             scheduledState.name)
                     scheduledEvent.active = True
-                # else:
-                #     raise RuntimeError('{} is not a valid event type'.format(
-                #         scheduledState.type))
-                # if scheduledState.type == StateType.cash:
-                #     latestEvents = history.latestEvents()
-                #     addToCash(latestEvents, scheduledState.data['value'])
-                # elif scheduledState.type == StateType.constantGrowthAsset:
-                #     latestEvents = history.latestEvents()
-                #     constantGrowthAsset = ConstantGrowthAsset(
-                #         None,
-                #         scheduledState.name,
-                #         accrualModel=config.time.accrualModel,
-                #         initialValue=scheduledState.data['value'],
-                #         annualAppreciation=scheduledState.data['appreciation'])
-                #     latestEvents.events[scheduledState.name] = constantGrowthAsset
-                # scheduledEvent.active = True
             elif eventDate >= scheduledEvent.endDate and scheduledEvent.active:
                 scheduledState = scheduledEvent.state
-                # latestEvents = history.latestEvents()
                 pendingEvents = history.pendingEvent
                 del pendingEvents.events[scheduledState.name] # todo: see below todo
                 scheduledEvent.active = False
