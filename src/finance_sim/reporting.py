@@ -7,7 +7,7 @@ from dateutil.relativedelta import relativedelta
 from pandas import DataFrame
 
 from .config import ScenarioConfig, parseConfig
-from .main import EventGroup, AbstractEvent, FinanceHistory, abstractEventType
+from .events import EventGroup, AbstractEvent, FinanceHistory, abstractEventType
 from .scheduling import AccrualModel
 
 def _assembleInitialState(config: ScenarioConfig) \
