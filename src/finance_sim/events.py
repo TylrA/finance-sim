@@ -12,7 +12,7 @@ from .scheduling import AccrualModel, portionOfYear
 from .util import parseAccrualModel
 
 EventConfigType = Optional[dict[str, Any]]
-class AbstractEvent(abc.ABC):
+class AbstractEventProfile(abc.ABC):
     '''
     "FinanceEvent" is a good name, but that's already taken. This should deprecate/rebase
     a lot of FinanceState and FinanceEvent. They can keep their names in the meantime.
@@ -31,23 +31,23 @@ class AbstractEvent(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def copy(self) -> AbstractEvent:
+    def copy(self) -> AbstractEventProfile:
         raise NotImplementedError()
-abstractEventType: dict[str, Type[AbstractEvent]] = {}
+abstractEventProfileType: dict[str, Type[AbstractEventProfile]] = {}
 
-class EventGroup(object):
+class EventProfileGroup(object):
     date: date
-    events: dict[str, AbstractEvent]
-    def __init__(self, date: date, events: dict[str, AbstractEvent]):
+    events: dict[str, AbstractEventProfile]
+    def __init__(self, date: date, events: dict[str, AbstractEventProfile]):
         self.date = date
         self.events = events
 
     def copy(self):
-        return EventGroup(self.date,
+        return EventProfileGroup(self.date,
                           { name: event.copy() for name, event in self.events.items() })
     
 
-class CashEvent(AbstractEvent):
+class CashEventProfile(AbstractEventProfile):
     value: float
 
     def __init__(self, config: EventConfigType, name: str, value: float = 0):
@@ -63,18 +63,18 @@ class CashEvent(AbstractEvent):
         pass
 
     def copy(self):
-        return CashEvent(None, self.name, self.value)
+        return CashEventProfile(None, self.name, self.value)
 
     def __str__(self):
         return str(round(self.value, 2))
-abstractEventType['cash'] = CashEvent
+abstractEventProfileType['cash'] = CashEventProfile
 
 @dataclass
 class TaxBracket(object):
     rate: float
     income: float
 
-class TaxPaymentEvent(AbstractEvent):
+class TaxPaymentEventProfile(AbstractEventProfile):
     frequency: relativedelta
     accrualModel: AccrualModel
     brackets: list[TaxBracket]
@@ -113,12 +113,12 @@ class TaxPaymentEvent(AbstractEvent):
                     marginAboveBracket = self.taxableIncome - adjustedIncomeThreshold
                     taxDue += bracket.rate * marginAboveBracket
                     self.taxableIncome -= marginAboveBracket
-            addToCash(history.pendingEvent, -taxDue)
+            addToCash(history.pendingEvents, -taxDue)
             self.taxesPaid += taxDue
                 
 
     def copy(self):
-        result = TaxPaymentEvent(None,
+        result = TaxPaymentEventProfile(None,
                                  self.name,
                                  self.frequency,
                                  self.accrualModel,
@@ -130,9 +130,9 @@ class TaxPaymentEvent(AbstractEvent):
     def __str__(self):
         return 'taxable income: {}; taxes paid: {}'.format(self.taxableIncome,
                                                            self.taxesPaid)
-abstractEventType['tax-payment'] = TaxPaymentEvent
+abstractEventProfileType['tax-payment'] = TaxPaymentEventProfile
 
-class ConstantGrowthAsset(AbstractEvent):
+class ConstantGrowthAsset(AbstractEventProfile):
     '''
     "Constant" really means constant exponential rate
     '''
@@ -171,14 +171,14 @@ class ConstantGrowthAsset(AbstractEvent):
 
     def __str__(self) -> str:
         return str(round(self.value, 2))
-abstractEventType['constant-growth-asset'] = ConstantGrowthAsset
+abstractEventProfileType['constant-growth-asset'] = ConstantGrowthAsset
 
-def addToCash(events: EventGroup,
+def addToCash(events: EventProfileGroup,
               difference: float,
               taxable: bool = True) -> None:
     if difference < 0:
         for _, event in events.events.items():
-            if isinstance(event, CashEvent):
+            if isinstance(event, CashEventProfile):
                 if event.value >= -difference:
                     event.value += difference
                     difference = 0
@@ -188,23 +188,23 @@ def addToCash(events: EventGroup,
         if difference > 0:
             raise RuntimeError("not enough money to subtract")
     else:
-        cashEvent: Optional[CashEvent] = None
-        taxPaymentEvent: Optional[TaxPaymentEvent] = None
+        cashEventProfile: Optional[CashEventProfile] = None
+        taxPaymentEventProfile: Optional[TaxPaymentEventProfile] = None
         for _, event in events.events.items():
-            if isinstance(event, CashEvent):
-                cashEvent = event
-                if taxPaymentEvent:
+            if isinstance(event, CashEventProfile):
+                cashEventProfile = event
+                if taxPaymentEventProfile:
                     break
-            elif isinstance(event, TaxPaymentEvent):
-                taxPaymentEvent = event
-                if cashEvent:
+            elif isinstance(event, TaxPaymentEventProfile):
+                taxPaymentEventProfile = event
+                if cashEventProfile:
                     break
-        if cashEvent:
-            cashEvent.value += difference
-        if taxable and taxPaymentEvent:
-            taxPaymentEvent.taxableIncome += difference
+        if cashEventProfile:
+            cashEventProfile.value += difference
+        if taxable and taxPaymentEventProfile:
+            taxPaymentEventProfile.taxableIncome += difference
 
-class AmortizingLoan(AbstractEvent):
+class AmortizingLoan(AbstractEventProfile):
     accrualModel: AccrualModel
     principle: float
     loanAmount: float
@@ -249,7 +249,7 @@ class AmortizingLoan(AbstractEvent):
             self.payment = paymentAmount
         self.principle += self.payment - interestPaid
         self.term -= yearFraction
-        addToCash(history.pendingEvent, -self.payment)
+        addToCash(history.pendingEvents, -self.payment)
 
     def copy(self):
         result = AmortizingLoan(None,
@@ -264,9 +264,9 @@ class AmortizingLoan(AbstractEvent):
 
     def __str__(self):
         return str(self.principle)
-abstractEventType['amortizing-loan'] = AmortizingLoan
+abstractEventProfileType['amortizing-loan'] = AmortizingLoan
 
-class ConstantSalariedIncome(AbstractEvent):
+class ConstantSalariedIncome(AbstractEventProfile):
     salary: float
     accrualModel: AccrualModel
     def __init__(self,
@@ -286,16 +286,16 @@ class ConstantSalariedIncome(AbstractEvent):
                   date: date,
                   period: relativedelta):
         portion = portionOfYear(date, period, self.accrualModel)
-        addToCash(history.pendingEvent, portion * self.salary)
+        addToCash(history.pendingEvents, portion * self.salary)
 
     def copy(self):
         return ConstantSalariedIncome(None, self.name, self.salary, self.accrualModel)
 
     def __str__(self):
         return str(self.salary)
-abstractEventType['constant-salaried-income'] = ConstantSalariedIncome
+abstractEventProfileType['constant-salaried-income'] = ConstantSalariedIncome
 
-class ConstantExpense(AbstractEvent):
+class ConstantExpense(AbstractEventProfile):
     yearlyExpense: float
     accrualModel: AccrualModel
     def __init__(self,
@@ -315,14 +315,14 @@ class ConstantExpense(AbstractEvent):
                   date: date,
                   period: relativedelta):
         portion = portionOfYear(date, period, self.accrualModel)
-        addToCash(history.pendingEvent, -portion * self.yearlyExpense)
+        addToCash(history.pendingEvents, -portion * self.yearlyExpense)
 
     def copy(self):
         return ConstantExpense(None, self.name, self.yearlyExpense, self.accrualModel)
 
     def __str__(self):
         return str(-self.yearlyExpense)
-abstractEventType['constant-expense'] = ConstantExpense
+abstractEventProfileType['constant-expense'] = ConstantExpense
 
 class FinanceState(object):
     def __init__(self, date: date = date.today()):
@@ -344,27 +344,27 @@ class FinanceState(object):
         return result
 
 class FinanceHistory(object):
-    pendingEvent: EventGroup
+    pendingEvents: EventProfileGroup
     
-    def __init__(self, event: EventGroup):
-        self.data: list[EventGroup] = [event]
+    def __init__(self, event: EventProfileGroup):
+        self.data: list[EventProfileGroup] = [event]
 
-    def _startPendingEvent(self, date: date):
-        self.pendingEvent = self.data[-1].copy()
-        self.pendingEvent.date = date
+    def _startPendingEventProfile(self, date: date):
+        self.pendingEvents = self.data[-1].copy()
+        self.pendingEvents.date = date
 
     def _processAndPushPending(self, date: date, period: relativedelta):
-        for _, event in self.pendingEvent.events.items():
+        for _, event in self.pendingEvents.events.items():
             event.transform(self, date, period)
-        self.data.append(self.pendingEvent)
+        self.data.append(self.pendingEvents)
 
     def passEvent(self, date: date, period: relativedelta):
-        self._startPendingEvent(date)
+        self._startPendingEventProfile(date)
         self._processAndPushPending(date, period)
     
-    def appendEvent(self, events: EventGroup):
+    def appendEvent(self, events: EventProfileGroup):
         self.data.append(events)
 
-    def latestEvents(self):
+    def latestEventProfiles(self):
         return self.data[-1]
 
