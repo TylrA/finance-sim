@@ -365,6 +365,6 @@ class FinanceHistory(object):
     def appendEvent(self, events: EventProfileGroup):
         self.data.append(events)
 
-    def latestEventProfiles(self):
+    def latestEvents(self):
         return self.data[-1]
 
