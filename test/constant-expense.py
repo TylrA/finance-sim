@@ -9,8 +9,8 @@ def testExpenseMonthly():
                                                  'expense',
                                                  120,
                                                  AccrualModel.PeriodicMonthly),
-                      'cash': CashEvent(None, 'cash', 10000) }
-    eventGroup = EventGroup(date(1999, 12, 1), initialEvents)
+                      'cash': CashEventProfile(None, 'cash', 10000) }
+    eventGroup = EventProfileGroup(date(1999, 12, 1), initialEvents)
     financeData = FinanceHistory(eventGroup)
     delta = relativedelta(months=1)
     financeData.passEvent(date(2000, 1, 1), delta)
@@ -24,8 +24,8 @@ def testExpenseAnnual():
                                                  'expense',
                                                  120,
                                                  AccrualModel.ProRata),
-                      'cash': CashEvent(None, 'cash', 10000) }
-    eventGroup = EventGroup(date(2001, 1, 1), initialEvents)
+                      'cash': CashEventProfile(None, 'cash', 10000) }
+    eventGroup = EventProfileGroup(date(2001, 1, 1), initialEvents)
     financeData = FinanceHistory(eventGroup)
     delta = relativedelta(years=1)
     financeData.passEvent(date(2002, 1, 1), delta)
@@ -39,8 +39,8 @@ def testExpenseZero():
                                                  'expense',
                                                  0,
                                                  AccrualModel.ProRata),
-                      'cash': CashEvent(None, 'cash', 10000) }
-    eventGroup = EventGroup(date(2001, 1, 1), initialEvents)
+                      'cash': CashEventProfile(None, 'cash', 10000) }
+    eventGroup = EventProfileGroup(date(2001, 1, 1), initialEvents)
     financeData = FinanceHistory(eventGroup)
     delta = relativedelta(years=1)
     financeData.passEvent(date(2002, 1, 1), delta)
