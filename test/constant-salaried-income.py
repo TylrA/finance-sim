@@ -5,12 +5,12 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 def testSalariedIncomeMonthly():
-    eventGroup = EventGroup(date(2000, 1, 1),
+    eventGroup = EventProfileGroup(date(2000, 1, 1),
                             { 'i': ConstantSalariedIncome(None,
                                                           'i',
                                                           120,
                                                           AccrualModel.PeriodicMonthly),
-                              'cash': CashEvent(None, 'cash', 0) })
+                              'cash': CashEventProfile(None, 'cash', 0) })
     financeData = FinanceHistory(eventGroup)
     previousCash = financeData.latestEvents().events['cash'].value
     delta = relativedelta(months=1)
@@ -21,12 +21,12 @@ def testSalariedIncomeMonthly():
         previousCash = newCash
         
 def testSalariedIncomeSemiMonthly():
-    eventGroup = EventGroup(date(2000, 1, 15),
+    eventGroup = EventProfileGroup(date(2000, 1, 15),
                             { 'i': ConstantSalariedIncome(None,
                                                           'i',
                                                           120,
                                                           AccrualModel.PeriodicSemiMonthly),
-                              'cash': CashEvent(None, 'cash', 0) })
+                              'cash': CashEventProfile(None, 'cash', 0) })
     financeData = FinanceHistory(eventGroup)
     previousCash = financeData.latestEvents().events['cash'].value
     delta = relativedelta(months=1)
@@ -45,12 +45,12 @@ def testSalariedIncomeSemiMonthly():
             previousCash = newCash
             
 def testSalariedIncomeSemiAnnual():
-    eventGroup = EventGroup(date(1999, 6, 1),
+    eventGroup = EventProfileGroup(date(1999, 6, 1),
                             { 'i': ConstantSalariedIncome(None,
                                                           'i',
                                                           100,
                                                           AccrualModel.PeriodicMonthly),
-                              'cash': CashEvent(None, 'cash', 0) })
+                              'cash': CashEventProfile(None, 'cash', 0) })
     financeData = FinanceHistory(eventGroup)
     previousCash = financeData.latestEvents().events['cash'].value
     for year in range(2000, 2006):
@@ -61,12 +61,12 @@ def testSalariedIncomeSemiAnnual():
             previousCash = newCash
 
 def testSalariedIncomeBiAnnual():
-    eventGroup = EventGroup(date(1999, 1, 1),
+    eventGroup = EventProfileGroup(date(1999, 1, 1),
                             { 'i': ConstantSalariedIncome(None,
                                                           'i',
                                                           100,
                                                           AccrualModel.PeriodicYearly),
-                              'cash': CashEvent(None, 'cash', 0) })
+                              'cash': CashEventProfile(None, 'cash', 0) })
     financeData = FinanceHistory(eventGroup)
     previousCash = financeData.latestEvents().events['cash'].value
     for year in range(2000, 2009, 2):
@@ -76,12 +76,12 @@ def testSalariedIncomeBiAnnual():
         previousCash = newCash
 
 def testSalariedIncomeZero():
-    eventGroup = EventGroup(date(1999, 12, 1),
+    eventGroup = EventProfileGroup(date(1999, 12, 1),
                             { 'i': ConstantSalariedIncome(None,
                                                           'i',
                                                           0,
                                                           AccrualModel.PeriodicMonthly),
-                              'cash': CashEvent(None, 'cash', 0) })
+                              'cash': CashEventProfile(None, 'cash', 0) })
     financeData = FinanceHistory(eventGroup)
     for month in range(1, 13):
         financeData.passEvent(date(2000, month, 1), relativedelta(months=1))
