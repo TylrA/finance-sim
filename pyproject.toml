@@ -21,6 +21,8 @@ black = "^23.7.0"
 [tool.poetry.scripts]
 test = "scripts:runTests"
 
+[tool.black]
+line-length = 92
 
 
 [build-system]
