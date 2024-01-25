@@ -1,4 +1,5 @@
 import subprocess
+import black
 
 
 def runTests():
@@ -7,5 +8,4 @@ def runTests():
 
 
 def format():
-    command = "black ."
-    subprocess.run(command, shell=True, check=True)
+    black.main(".")
