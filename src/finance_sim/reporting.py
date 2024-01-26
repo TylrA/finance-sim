@@ -7,23 +7,26 @@ from dateutil.relativedelta import relativedelta
 from pandas import DataFrame
 
 from .config import ScenarioConfig, parseConfig
-from .events import EventProfileGroup, \
-    AbstractEventProfile, \
-    FinanceHistory, \
-    abstractEventProfileType
+from .events import (
+    EventProfileGroup,
+    AbstractEventProfile,
+    FinanceHistory,
+    abstractEventProfileType,
+)
 from .scheduling import AccrualModel
 
-def _assembleInitialState(config: ScenarioConfig) \
-    -> EventProfileGroup:
+
+def _assembleInitialState(config: ScenarioConfig) -> EventProfileGroup:
     events: dict[str, AbstractEventProfile] = {}
     for stateConfig in config.initialState:
         if stateConfig.type in abstractEventProfileType:
-            events[stateConfig.name] = \
-                abstractEventProfileType[stateConfig.type](stateConfig.data,
-                                                    stateConfig.name)
+            events[stateConfig.name] = abstractEventProfileType[stateConfig.type](
+                stateConfig.data, stateConfig.name
+            )
         else:
-            raise RuntimeError('{} is not a valid event type'.format(stateConfig.type))
+            raise RuntimeError("{} is not a valid event type".format(stateConfig.type))
     return EventProfileGroup(config.time.startingDate, events)
+
 
 def _nextDate(eventDate: date, accrualModel: AccrualModel) -> Tuple[date, relativedelta]:
     if accrualModel == AccrualModel.PeriodicMonthly:
@@ -31,8 +34,7 @@ def _nextDate(eventDate: date, accrualModel: AccrualModel) -> Tuple[date, relati
         return eventDate + delta, delta
     elif accrualModel == AccrualModel.PeriodicSemiMonthly:
         if eventDate.day == 15:
-            delta = relativedelta(
-                days = monthrange(eventDate.year, eventDate.month)[1] - 15)
+            delta = relativedelta(days=monthrange(eventDate.year, eventDate.month)[1] - 15)
         else:
             delta = relativedelta(days=15)
         return eventDate + delta, delta
@@ -47,25 +49,24 @@ def _nextDate(eventDate: date, accrualModel: AccrualModel) -> Tuple[date, relati
         return eventDate + delta, delta
     return date(2000, 1, 1), relativedelta(months=0)
 
-def _synchronizeUpdates(config: ScenarioConfig,
-                        eventDate: date,
-                        history: FinanceHistory):
+
+def _synchronizeUpdates(config: ScenarioConfig, eventDate: date, history: FinanceHistory):
     for scheduledEvent in config.scheduledValues:
         if eventDate >= scheduledEvent.startDate:
             if eventDate < scheduledEvent.endDate and not scheduledEvent.active:
                 scheduledState = scheduledEvent.state
                 if scheduledState.type in abstractEventProfileType:
                     pendingEvents = history.pendingEvents
-                    pendingEvents.events[scheduledState.name] = \
-                        abstractEventProfileType[scheduledState.type](
-                            scheduledState.data,
-                            scheduledState.name)
+                    pendingEvents.events[scheduledState.name] = abstractEventProfileType[
+                        scheduledState.type
+                    ](scheduledState.data, scheduledState.name)
                     scheduledEvent.active = True
             elif eventDate >= scheduledEvent.endDate and scheduledEvent.active:
                 scheduledState = scheduledEvent.state
                 pendingEvents = history.pendingEvents
-                del pendingEvents.events[scheduledState.name] # todo: see below todo
+                del pendingEvents.events[scheduledState.name]  # todo: see below todo
                 scheduledEvent.active = False
+
 
 def _simulate(config: ScenarioConfig, history: FinanceHistory):
     accrualModel = config.time.accrualModel
@@ -76,10 +77,12 @@ def _simulate(config: ScenarioConfig, history: FinanceHistory):
         history._processAndPushPending(eventDate, delta)
         eventDate, delta = _nextDate(eventDate, accrualModel)
 
+
 def _stateToRow(state: EventProfileGroup) -> list:
     result: list[Any] = [state.date]
     result.extend([str(event) for _, event in state.events.items()])
     return result
+
 
 def report(config: ScenarioConfig) -> DataFrame:
     initialEvents = _assembleInitialState(config)
@@ -87,6 +90,7 @@ def report(config: ScenarioConfig) -> DataFrame:
     _simulate(config, history)
     return DataFrame([_stateToRow(d) for d in history.data])
 
-if __name__ == '__main__':
-    config = parseConfig('../../examples/finance-config.yaml')
+
+if __name__ == "__main__":
+    config = parseConfig("../../examples/finance-config.yaml")
     print(report(config).to_csv())
