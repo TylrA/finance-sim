@@ -1,6 +1,5 @@
 from typing import Any, Tuple
 
-import numpy as np
 from calendar import monthrange
 from datetime import date
 from dateutil.relativedelta import relativedelta
