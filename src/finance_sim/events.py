@@ -214,7 +214,7 @@ def addToCash(events: EventProfileGroup, difference: float, taxable: bool = True
             taxPaymentEventProfile.taxableIncome += difference
 
 
-class AmortizingLoan(AbstractEventProfile):
+class AmortizingLoanEventProfile(AbstractEventProfile):
     accrualModel: AccrualModel
     principle: float
     loanAmount: float
@@ -261,7 +261,7 @@ class AmortizingLoan(AbstractEventProfile):
         addToCash(history.pendingEvents, -self.payment)
 
     def copy(self):
-        result = AmortizingLoan(
+        result = AmortizingLoanEventProfile(
             None,
             self.name,
             self.accrualModel,
@@ -277,7 +277,7 @@ class AmortizingLoan(AbstractEventProfile):
         return str(self.principle)
 
 
-abstractEventProfileType["amortizing-loan"] = AmortizingLoan
+abstractEventProfileType["amortizing-loan"] = AmortizingLoanEventProfile
 
 
 class ConstantIncomeEventProfile(AbstractEventProfile):
@@ -349,7 +349,7 @@ class FinanceState(object):
         self.date = date
         self.cash: float = 0
         self.constantGrowthAssets: list[ConstantGrowthAssetEventProfile] = []
-        self.amortizingLoans: dict[str, AmortizingLoan] = {}
+        self.amortizingLoans: dict[str, AmortizingLoanEventProfile] = {}
         self.taxableIncome: float = 0
         self.taxesPaid: float = 0
 

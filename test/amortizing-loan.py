@@ -5,7 +5,9 @@ from dateutil.relativedelta import relativedelta
 
 
 def testAmortizingLoanTerm():
-    loan = AmortizingLoan(None, "test", AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
+    loan = AmortizingLoanEventProfile(
+        None, "test", AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20
+    )
     eventGroup = EventProfileGroup(
         date(1999, 12, 1), {"test": loan, "cash": CashEventProfile(None, "cash", 600000)}
     )
@@ -13,35 +15,39 @@ def testAmortizingLoanTerm():
     delta = relativedelta(months=1)
     history.passEvent(date(2000, 1, 1), delta)
     event = history.latestEvents().events["test"]
-    assert isinstance(event, AmortizingLoan)
+    assert isinstance(event, AmortizingLoanEventProfile)
     assert event.term == pytest.approx(20 - 1 / 12)
     for month in range(2, 13):
         history.passEvent(date(2000, month, 1), delta)
     event = history.latestEvents().events["test"]
-    assert isinstance(event, AmortizingLoan)
+    assert isinstance(event, AmortizingLoanEventProfile)
     assert event.term == pytest.approx(19)
 
 
 def testAmortizingLoanFullPayment():
-    loan = AmortizingLoan(None, "test", AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
+    loan = AmortizingLoanEventProfile(
+        None, "test", AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20
+    )
     eventGroup = EventProfileGroup(
         date(1999, 12, 1), {"test": loan, "cash": CashEventProfile(None, "cash", 600000)}
     )
     history = FinanceHistory(eventGroup)
     event = history.latestEvents().events["test"]
-    assert isinstance(event, AmortizingLoan)
+    assert isinstance(event, AmortizingLoanEventProfile)
     assert event.principle == 0
     delta = relativedelta(months=1)
     for year in range(2000, 2020):
         for month in range(1, 13):
             history.passEvent(date(year, month, 1), delta)
     event = history.latestEvents().events["test"]
-    assert isinstance(event, AmortizingLoan)
+    assert isinstance(event, AmortizingLoanEventProfile)
     assert event.principle == pytest.approx(100000)
 
 
 def testAmortizingLoanConstantPaymentCost():
-    loan = AmortizingLoan(None, "test", AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
+    loan = AmortizingLoanEventProfile(
+        None, "test", AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20
+    )
     eventGroup = EventProfileGroup(
         date(1999, 12, 1), {"test": loan, "cash": CashEventProfile(None, "cash", 600000)}
     )
@@ -60,7 +66,9 @@ def testAmortizingLoanConstantPaymentCost():
 
 
 def testAmortizingLoanInterestRate():
-    loan = AmortizingLoan(None, "test", AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20)
+    loan = AmortizingLoanEventProfile(
+        None, "test", AccrualModel.PeriodicMonthly, 0, 100000, 0.05, 20
+    )
     eventGroup = EventProfileGroup(
         date(2000, 1, 1), {"test": loan, "cash": CashEventProfile(None, "cash", 600000)}
     )
@@ -71,6 +79,6 @@ def testAmortizingLoanInterestRate():
     assert isinstance(cashEvent, CashEventProfile)
     paymentAmount = 600000 - cashEvent.value
     loanEvent = history.latestEvents().events["test"]
-    assert isinstance(loanEvent, AmortizingLoan)
+    assert isinstance(loanEvent, AmortizingLoanEventProfile)
     interestPayment = paymentAmount - loanEvent.principle
     assert interestPayment == pytest.approx(100000 * 0.05, 1e-6)
