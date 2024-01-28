@@ -142,7 +142,7 @@ class TaxPaymentEventProfile(AbstractEventProfile):
 abstractEventProfileType["tax-payment"] = TaxPaymentEventProfile
 
 
-class ConstantGrowthAsset(AbstractEventProfile):
+class ConstantGrowthAssetEventProfile(AbstractEventProfile):
     """
     "Constant" really means constant exponential rate
     """
@@ -171,8 +171,8 @@ class ConstantGrowthAsset(AbstractEventProfile):
         portion = portionOfYear(date, delta, self.accrualModel)
         self.value *= pow(1 + self.appreciation, portion)
 
-    def copy(self) -> ConstantGrowthAsset:
-        result = ConstantGrowthAsset(
+    def copy(self) -> ConstantGrowthAssetEventProfile:
+        result = ConstantGrowthAssetEventProfile(
             None, self.name, self.accrualModel, self.value, self.appreciation
         )
         return result
@@ -181,7 +181,7 @@ class ConstantGrowthAsset(AbstractEventProfile):
         return str(round(self.value, 2))
 
 
-abstractEventProfileType["constant-growth-asset"] = ConstantGrowthAsset
+abstractEventProfileType["constant-growth-asset"] = ConstantGrowthAssetEventProfile
 
 
 def addToCash(events: EventProfileGroup, difference: float, taxable: bool = True) -> None:
@@ -348,7 +348,7 @@ class FinanceState(object):
     def __init__(self, date: date = date.today()):
         self.date = date
         self.cash: float = 0
-        self.constantGrowthAssets: list[ConstantGrowthAsset] = []
+        self.constantGrowthAssets: list[ConstantGrowthAssetEventProfile] = []
         self.amortizingLoans: dict[str, AmortizingLoan] = {}
         self.taxableIncome: float = 0
         self.taxesPaid: float = 0

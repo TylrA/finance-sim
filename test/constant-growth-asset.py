@@ -8,7 +8,9 @@ def testConstantGrowthMonthly():
     eventGroup = EventProfileGroup(
         date(1999, 12, 1),
         {
-            "g": ConstantGrowthAsset(None, "g", AccrualModel.PeriodicMonthly, 100, 0.5),
+            "g": ConstantGrowthAssetEventProfile(
+                None, "g", AccrualModel.PeriodicMonthly, 100, 0.5
+            ),
             "cash": CashEventProfile(None, "cash", 0),
         },
     )
@@ -27,7 +29,9 @@ def testConstantGrowthAnnually():
     eventGroup = EventProfileGroup(
         date(2001, 1, 1),
         {
-            "g": ConstantGrowthAsset(None, "g", AccrualModel.PeriodicYearly, 100, 0.5),
+            "g": ConstantGrowthAssetEventProfile(
+                None, "g", AccrualModel.PeriodicYearly, 100, 0.5
+            ),
             "cash": CashEventProfile(None, "cash", 0),
         },
     )
