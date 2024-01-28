@@ -280,7 +280,7 @@ class AmortizingLoan(AbstractEventProfile):
 abstractEventProfileType["amortizing-loan"] = AmortizingLoan
 
 
-class ConstantSalariedIncome(AbstractEventProfile):
+class ConstantIncomeEventProfile(AbstractEventProfile):
     salary: float
     accrualModel: AccrualModel
 
@@ -303,13 +303,13 @@ class ConstantSalariedIncome(AbstractEventProfile):
         addToCash(history.pendingEvents, portion * self.salary)
 
     def copy(self):
-        return ConstantSalariedIncome(None, self.name, self.salary, self.accrualModel)
+        return ConstantIncomeEventProfile(None, self.name, self.salary, self.accrualModel)
 
     def __str__(self):
         return str(self.salary)
 
 
-abstractEventProfileType["constant-salaried-income"] = ConstantSalariedIncome
+abstractEventProfileType["constant-income"] = ConstantIncomeEventProfile
 
 
 class ConstantExpense(AbstractEventProfile):

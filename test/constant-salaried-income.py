@@ -9,7 +9,7 @@ def testSalariedIncomeMonthly():
     eventGroup = EventProfileGroup(
         date(2000, 1, 1),
         {
-            "i": ConstantSalariedIncome(None, "i", 120, AccrualModel.PeriodicMonthly),
+            "i": ConstantIncomeEventProfile(None, "i", 120, AccrualModel.PeriodicMonthly),
             "cash": CashEventProfile(None, "cash", 0),
         },
     )
@@ -27,7 +27,9 @@ def testSalariedIncomeSemiMonthly():
     eventGroup = EventProfileGroup(
         date(2000, 1, 15),
         {
-            "i": ConstantSalariedIncome(None, "i", 120, AccrualModel.PeriodicSemiMonthly),
+            "i": ConstantIncomeEventProfile(
+                None, "i", 120, AccrualModel.PeriodicSemiMonthly
+            ),
             "cash": CashEventProfile(None, "cash", 0),
         },
     )
@@ -53,7 +55,7 @@ def testSalariedIncomeSemiAnnual():
     eventGroup = EventProfileGroup(
         date(1999, 6, 1),
         {
-            "i": ConstantSalariedIncome(None, "i", 100, AccrualModel.PeriodicMonthly),
+            "i": ConstantIncomeEventProfile(None, "i", 100, AccrualModel.PeriodicMonthly),
             "cash": CashEventProfile(None, "cash", 0),
         },
     )
@@ -71,7 +73,7 @@ def testSalariedIncomeBiAnnual():
     eventGroup = EventProfileGroup(
         date(1999, 1, 1),
         {
-            "i": ConstantSalariedIncome(None, "i", 100, AccrualModel.PeriodicYearly),
+            "i": ConstantIncomeEventProfile(None, "i", 100, AccrualModel.PeriodicYearly),
             "cash": CashEventProfile(None, "cash", 0),
         },
     )
@@ -88,7 +90,7 @@ def testSalariedIncomeZero():
     eventGroup = EventProfileGroup(
         date(1999, 12, 1),
         {
-            "i": ConstantSalariedIncome(None, "i", 0, AccrualModel.PeriodicMonthly),
+            "i": ConstantIncomeEventProfile(None, "i", 0, AccrualModel.PeriodicMonthly),
             "cash": CashEventProfile(None, "cash", 0),
         },
     )

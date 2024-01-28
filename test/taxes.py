@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 def testSalariedIncomeFlatTax():
     delta = relativedelta(months=1)
     events = {
-        "i": ConstantSalariedIncome(None, "i", 100000, AccrualModel.PeriodicMonthly),
+        "i": ConstantIncomeEventProfile(None, "i", 100000, AccrualModel.PeriodicMonthly),
         "t": TaxPaymentEventProfile(
             None,
             "t",
