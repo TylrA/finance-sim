@@ -346,6 +346,16 @@ class ConstantExpenseEventProfile(AbstractEventProfile):
 abstractEventProfileType["constant-expense"] = ConstantExpenseEventProfile
 
 
+class IrregularCostEventProfile(AbstractEventProfile):
+    costValues: dict[date, float]
+
+    def __init__(self, config: EventConfigType, name: str, costs: dict[date, float]):
+        if config is not None:
+            costs = config["costs"]
+        self.name = name
+        self.costValues = costs
+
+
 class FinanceState(object):
     def __init__(self, date: date = date.today()):
         self.date = date
