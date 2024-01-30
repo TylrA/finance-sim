@@ -6,7 +6,9 @@ from dateutil.relativedelta import relativedelta
 
 def testExpenseMonthly():
     initialEvents = {
-        "expense": ConstantExpense(None, "expense", 120, AccrualModel.PeriodicMonthly),
+        "expense": ConstantExpenseEventProfile(
+            None, "expense", 120, AccrualModel.PeriodicMonthly
+        ),
         "cash": CashEventProfile(None, "cash", 10000),
     }
     eventGroup = EventProfileGroup(date(1999, 12, 1), initialEvents)
@@ -21,7 +23,7 @@ def testExpenseMonthly():
 
 def testExpenseAnnual():
     initialEvents = {
-        "expense": ConstantExpense(None, "expense", 120, AccrualModel.ProRata),
+        "expense": ConstantExpenseEventProfile(None, "expense", 120, AccrualModel.ProRata),
         "cash": CashEventProfile(None, "cash", 10000),
     }
     eventGroup = EventProfileGroup(date(2001, 1, 1), initialEvents)
@@ -36,7 +38,7 @@ def testExpenseAnnual():
 
 def testExpenseZero():
     initialEvents = {
-        "expense": ConstantExpense(None, "expense", 0, AccrualModel.ProRata),
+        "expense": ConstantExpenseEventProfile(None, "expense", 0, AccrualModel.ProRata),
         "cash": CashEventProfile(None, "cash", 10000),
     }
     eventGroup = EventProfileGroup(date(2001, 1, 1), initialEvents)

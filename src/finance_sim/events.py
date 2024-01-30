@@ -312,7 +312,7 @@ class ConstantIncomeEventProfile(AbstractEventProfile):
 abstractEventProfileType["constant-income"] = ConstantIncomeEventProfile
 
 
-class ConstantExpense(AbstractEventProfile):
+class ConstantExpenseEventProfile(AbstractEventProfile):
     yearlyExpense: float
     accrualModel: AccrualModel
 
@@ -335,13 +335,15 @@ class ConstantExpense(AbstractEventProfile):
         addToCash(history.pendingEvents, -portion * self.yearlyExpense)
 
     def copy(self):
-        return ConstantExpense(None, self.name, self.yearlyExpense, self.accrualModel)
+        return ConstantExpenseEventProfile(
+            None, self.name, self.yearlyExpense, self.accrualModel
+        )
 
     def __str__(self):
         return str(-self.yearlyExpense)
 
 
-abstractEventProfileType["constant-expense"] = ConstantExpense
+abstractEventProfileType["constant-expense"] = ConstantExpenseEventProfile
 
 
 class FinanceState(object):
