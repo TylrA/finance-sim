@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import pandas as pd
 
 from ctypes import ArgumentError
 from dataclasses import dataclass
@@ -354,6 +355,27 @@ class IrregularCostEventProfile(AbstractEventProfile):
             costs = config["costs"]
         self.name = name
         self.costValues = costs
+
+    def transform(self, history: FinanceHistory, date: date, period: relativedelta):
+        addToCash(history.pendingEvents, self.costValues[date])
+
+    def copy(self):
+        return IrregularCostEventProfile(None, self.name, self.costValues)
+
+
+class CsvCostEventProfile(IrregularCostEventProfile):
+    def __init__(self, config: EventConfigType, name: str, path: str):
+        if config is not None:
+            path = config["path"]
+
+        df = pd.read_csv(path)
+        costs: dict[date, float] = {}
+        for dateVal, cost in df.items():
+            assert isinstance(dateVal, date)
+            assert isinstance(cost, float)
+            costs[dateVal] = cost
+
+        super(CsvCostEventProfile, self).__init__(None, name, costs)
 
 
 class FinanceState(object):
