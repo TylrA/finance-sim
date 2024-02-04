@@ -1,5 +1,6 @@
 from ctypes import ArgumentError
 import re
+import os
 
 from .scheduling import AccrualModel
 
@@ -31,3 +32,7 @@ def parseAccrualModel(accrualModelStr: str) -> AccrualModel:
         return AccrualModel.PeriodicYearly
 
     raise RuntimeError("None of the supported accrual model was used")
+
+
+def getEnvVar(variable: str) -> str:
+    return os.getenv(variable) or ""
