@@ -357,7 +357,7 @@ class IrregularCostEventProfile(AbstractEventProfile):
         self.costValues = costs
 
     def transform(self, history: FinanceHistory, date: date, period: relativedelta):
-        addToCash(history.pendingEvents, self.costValues[date])
+        addToCash(history.pendingEvents, -self.costValues[date])
 
     def copy(self):
         return IrregularCostEventProfile(None, self.name, self.costValues)
@@ -376,6 +376,22 @@ class CsvCostEventProfile(IrregularCostEventProfile):
             costs[dateVal] = cost
 
         super(CsvCostEventProfile, self).__init__(None, name, costs)
+
+
+class IrregularIncomeEventProfile(AbstractEventProfile):
+    incomeValues: dict[date, float]
+
+    def __init__(self, config: EventConfigType, name: str, income: dict[date, float]):
+        if config is not None:
+            income = config["income"]
+        self.name = name
+        self.incomeValues = income
+
+    def transform(self, history: FinanceHistory, date: date, period: relativedelta):
+        addToCash(history.pendingEvents, self.incomeValues[date])
+
+    def copy(self):
+        return IrregularIncomeEventProfile(None, self.name, self.incomeValues)
 
 
 class FinanceState(object):
