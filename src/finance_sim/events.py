@@ -99,7 +99,7 @@ class TaxPaymentEventProfile(AbstractEventProfile):
         if config is not None:
             frequency = config["frequency"]
             accrualModel = parseAccrualModel(config["accrualModel"])
-            brackets = config["brackets"]  # todo: same as above
+            brackets = config["brackets"]
         if len(brackets) < 1:
             raise ArgumentError("there must be at least one tax bracket")
         if brackets[0].income != 0.0:

@@ -63,7 +63,7 @@ def _synchronizeUpdates(config: ScenarioConfig, eventDate: date, history: Financ
             elif eventDate >= scheduledEvent.endDate and scheduledEvent.active:
                 scheduledState = scheduledEvent.state
                 pendingEvents = history.pendingEvents
-                del pendingEvents.events[scheduledState.name]  # todo: see below todo
+                del pendingEvents.events[scheduledState.name]
                 scheduledEvent.active = False
 
 
